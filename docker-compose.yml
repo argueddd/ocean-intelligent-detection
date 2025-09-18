@@ -1,0 +1,22 @@
+services:
+  homepage:
+    build: ./homepage
+    container_name: homepage
+    networks:
+      - proxy-tier
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - proxy-tier
+    depends_on:
+      - homepage
+
+networks:
+  proxy-tier:
+    external: true
