@@ -5,7 +5,7 @@ import LeftPanel from './components/LeftPanel';
 import MainDisplay from './components/MainDisplay';
 import RightPanel from './components/RightPanel';
 import BottomNavigation from './components/BottomNavigation';
-import { projectConfig, projectConfig2, projectConfig3 } from './data/projectConfig';
+import { projectConfig, projectConfig2, projectConfig3, projectConfig4 } from './data/projectConfig';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -120,7 +120,7 @@ function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   // 创建项目数组，包含所有配置的项目
-  const projects = [projectConfig, projectConfig2, projectConfig3];
+  const projects = [projectConfig, projectConfig2, projectConfig3, projectConfig4];
   const currentProject = projects[currentProjectIndex];
 
   const handleProjectChange = useCallback((index) => {

@@ -246,6 +246,21 @@ const MainDisplay = ({ project, projectIndex, onDemoClick, isTransitioning }) =>
   const [showVideo, setShowVideo] = useState(false);
   const projectNumber = String(projectIndex + 1).padStart(2, '0');
   
+  // 定义项目链接映射
+  const projectLinks = [
+    '/', // 主页
+    '/contract-review/app/', // 合同审核应用
+    '/intelligent-audit/app/', // 智能审计应用
+    '/norms-review/app/', // 规范审查应用
+    '/', // 其他项目
+  ];
+  
+  const handleDemoClick = () => {
+    const link = projectLinks[projectIndex] || '/';
+    console.log('Demo button clicked! Project index:', projectIndex, 'Link:', link);
+    window.open(link, '_blank');
+  };
+  
   const handlePlayVideo = () => {
     setShowVideo(true);
   };
@@ -321,7 +336,7 @@ const MainDisplay = ({ project, projectIndex, onDemoClick, isTransitioning }) =>
             Play Demo
           </PlayButton>
           <DemoButton
-            onClick={onDemoClick}
+            onClick={handleDemoClick}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, y: 20 }}
