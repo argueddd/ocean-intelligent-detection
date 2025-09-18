@@ -1,13 +1,16 @@
-# 构建阶段
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+# 开发环境Dockerfile
+FROM node:20-bullseye
 
-# 生产阶段
-FROM nginx:alpine
-COPY --from=builder /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+WORKDIR /app
+
+# 复制package文件
+COPY package*.json ./
+
+# 安装依赖
+RUN npm install
+
+# 暴露开发服务器端口
+EXPOSE 3000
+
+# 启动开发服务器
+CMD ["npm", "start"]

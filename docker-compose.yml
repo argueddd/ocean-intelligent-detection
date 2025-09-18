@@ -2,8 +2,17 @@ services:
   homepage:
     build: ./homepage
     container_name: homepage
+    volumes:
+      - ./homepage/src:/app/src:ro
+      - ./homepage/public:/app/public:ro
+      - ./homepage/package.json:/app/package.json:ro
+      - ./homepage/package-lock.json:/app/package-lock.json:ro
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     networks:
       - proxy-tier
+    command: npm start
 
   nginx:
     image: nginx:alpine
