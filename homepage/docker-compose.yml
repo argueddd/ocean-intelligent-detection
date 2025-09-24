@@ -1,0 +1,15 @@
+version: '3.8'
+  
+services:
+  # 前端服务
+  homepagev2:
+    image: homepage:v2
+    container_name: homepagev2
+    networks:
+      - proxy-tier
+    restart: unless-stopped
+
+networks:
+  proxy-tier:
+    external: true
+
