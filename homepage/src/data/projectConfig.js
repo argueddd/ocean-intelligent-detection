@@ -3,7 +3,7 @@
 export const projectConfig = {
   // 基础项目信息
   basicInfo: {
-    startTime: "2025.12",
+    startTime: "2024.12",
     title: "智能合同审查系统",
     subtitle: "基于COT技术的文档智能分析",
     description: "利用Chain of Thought推理技术，实现合同条款的自动识别、风险分析和合规性检查。",
