@@ -373,6 +373,139 @@ export const projectConfig4 = {
     demoUrl: "/contract-review/app/" // 跳转到demo页面
   }
 };
+
+
+
+export const projectConfig5 = {
+  // 基础项目信息
+  basicInfo: {
+    startTime: "2025.09",
+    title: "规则学习智能体",
+    subtitle: "稽核点生成与匹配助手",
+    description:
+      "该智能体能够自动学习和解析规则文档，生成标准化的稽核点，并在实际业务场景中快速匹配最相关的稽核点，帮助用户理解规则要点和应用范围。",
+    features: [
+      "稽核点生成",
+      "规则标准化",
+      "稽核点理解",
+      "场景匹配",
+      "结果输出"
+    ]
+  },
+
+  // 智能体性能指标（更贴近“稽核点”应用）
+  performance: {
+    pointCoverage: "支持生成 95%+ 规则稽核点",
+    responseTime: "秒级响应",
+    matchingAccuracy: "稽核点匹配准确率 92%",
+    stability: "全年稳定率 99.9%"
+  },
+
+  // 应用维度评估
+  evaluation: [
+    { label: "准确性", value: "9/10", percentage: 90, color: "#00aaff" },
+    { label: "覆盖度", value: "8/10", percentage: 80, color: "#00ff88" },
+    { label: "可解释性", value: "9/10", percentage: 90, color: "#ffa500" },
+    { label: "维护成本", value: "5/10", percentage: 50, color: "#ff6b6b" }
+  ],
+
+  // 核心能力
+  skills: [
+    {
+      frontTitle: "稽核点生成",
+      frontDescription:
+        "从规则、条文、制度等文档中抽取关键信息，生成可管理的稽核点。",
+      backTitle: "规则标准化",
+      backDescription:
+        "将零散条文转化为结构化的稽核点集合，便于存储和调用。"
+    },
+    {
+      frontTitle: "稽核点理解",
+      frontDescription:
+        "对用户输入的需求或描述进行解析，识别对应的稽核点。",
+      backTitle: "多维度解释",
+      backDescription:
+        "结合语义理解，输出稽核点的适用范围、限制条件和说明。"
+    },
+    {
+      frontTitle: "场景匹配",
+      frontDescription:
+        "在具体场景中调用最相关的稽核点，形成针对性的匹配结果。",
+      backTitle: "结果输出",
+      backDescription:
+        "以清晰直观的方式展示适用的稽核点，支持导出或二次应用。"
+    }
+  ],
+
+  // 技术栈占比
+  techStack: [
+    { name: "Python", percentage: 35 },
+    { name: "大语言模型", percentage: 30 },
+    { name: "知识库/数据库", percentage: 25 },
+    { name: "前端可视化", percentage: 10 }
+  ],
+
+  // 系统架构图
+  architecture: {
+    imagePath: "/data/architecture.png",
+    nodes: [
+      { icon: "📄", label: "规则文档", type: "input" },
+      { icon: "🤖", label: "规则学习智能体", type: "process" },
+      { icon: "📌", label: "稽核点生成", type: "process" },
+      { icon: "📚", label: "稽核点库", type: "storage" },
+      { icon: "📊", label: "匹配结果", type: "output" }
+    ],
+    details: [
+      { icon: "📝", text: "稽核点生成" },
+      { icon: "🔍", text: "稽核点理解" },
+      { icon: "📌", text: "场景匹配" },
+      { icon: "📑", text: "结果输出" }
+    ]
+  },
+
+  // 功能模块
+  modules: [
+    {
+      name: "规则解析",
+      status: "active",
+      description: "支持多种文档格式，自动解析并提取稽核点",
+      endpoints: ["/api/parse", "/api/upload"]
+    },
+    {
+      name: "稽核点生成",
+      status: "active",
+      description: "将条文转化为结构化稽核点，并入库管理",
+      endpoints: ["/api/generate", "/api/store"]
+    },
+    {
+      name: "稽核点匹配",
+      status: "active",
+      description: "根据输入场景或需求，匹配最相关的稽核点",
+      endpoints: ["/api/match", "/api/query"]
+    },
+    {
+      name: "结果输出",
+      status: "active",
+      description: "以直观的方式展示匹配稽核点，支持导出或接口调用",
+      endpoints: ["/api/result", "/api/export"]
+    }
+  ],
+
+  // 使用场景
+  useCases: [
+    "合同条款稽核点生成",
+    "政策法规稽核点提炼",
+    "营销活动合规要点抽取",
+    "内部制度稽核点管理",
+    "场景化稽核点匹配与输出"
+  ],
+
+  // 媒体文件路径
+  media: {
+    videoPath: "/data/demo.mp4",
+    demoUrl: "/rule-learning/app/"
+  }
+};
 // 项目数据模板 - 用户可以复制这个模板创建新项目
 export const projectTemplate = {
   basicInfo: {
