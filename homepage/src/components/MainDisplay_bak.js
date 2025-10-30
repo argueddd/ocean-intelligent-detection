@@ -248,13 +248,11 @@ const MainDisplay = ({ project, projectIndex, onDemoClick, isTransitioning }) =>
   
   // 定义项目链接映射
   const projectLinks = [
+    '/', // 主页
     '/contract-review/app/', // 合同审核应用
-    '/norms-review/app/ ', // 合同审核应用
-    '/rag/app/', // 智源知识沉淀引擎
-    '/intelligent-audit/app/', // 内审智能体
-    '/goofish/monitor/app/', // 二手平台(咸鱼)智能监控机器人
-    '/ai-diagnosis/app/', // 有线故障诊断智能体
-    '/voice/app/', // 语音识别与分析
+    '/intelligent-audit/app/', // 智能审计应用
+    '/norms-review/app/', // 规范审查应用
+    '/', // 其他项目
   ];
   
   const handleDemoClick = () => {
@@ -359,11 +357,6 @@ const MainDisplay = ({ project, projectIndex, onDemoClick, isTransitioning }) =>
               src={project.media.videoPath}
               controls
               autoPlay
-              muted
-              onError={(e) => {
-                console.error('视频加载失败:', e);
-              // 可以在这里设置错误状态并显示给用户
-              }}
               style={{ width: '100%', height: 'auto' }}
             >
               您的浏览器不支持视频播放。

@@ -633,17 +633,6 @@ const CoolProgressBar = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.1);
 `;
 
-const TokenSection = styled.div`
-  margin-bottom: 32px;
- `;
-
- // token消耗 - 紧凑卡片式
-const TokenGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-`;
-
 const CoolProgressFill = styled.div`
   height: 100%;
   width: 0%;
@@ -689,73 +678,6 @@ const CoolMetricValue = styled.div`
   text-align: right;
 `;
 
-const PerformanceCardContent = styled.div`  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
- `;
-
-const PerformanceValueWrapper = styled.div`  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
- `;
-
-const PerformanceMainValue = styled.div`  font-size: 13px;
-  font-weight: 600;
-  color: #00aaff;
-  font-family: 'Source Code Pro', monospace;
-  text-shadow: 0 0 6px rgba(0, 170, 255, 0.3);
- `;
-
-const PerformanceComparison = styled.div`  display: flex;
-  align-items: center;
-  font-size: 9px;
-  font-weight: 500;
-  margin-top: 2px;
-
-  color: ${props => props.positive ? '#00ff88' : '#ff5555'};
- `;
-
-const PerformanceLabelWrapper = styled.div`  display: flex;
-  flex-direction: column;
- `;
-
-const PerformanceMainLabel = styled.div`  font-size: 9px;
-  color: #cccccc;
-  font-family: 'Inter', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
- `;
-
-// 首先添加缺失的样式组件定义
-const HorizontalPerformanceCard = styled(motion.div)`  background: rgba(0, 170, 255, 0.05);
-  border: 1px solid rgba(0, 170, 255, 0.2);
-  border-radius: 6px;
-  padding: 8px 12px;
-  transition: all 0.3s ease;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  &:hover {
-    background: rgba(0, 170, 255, 0.1);
-    border-color: rgba(0, 170, 255, 0.4);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 170, 255, 0.2);
-  }`;
-
-const HorizontalPerformanceLabel = styled.div`  font-size: 10px;
-  color: #cccccc;
-  font-family: 'Inter', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;`;
-
-const HorizontalPerformanceValue = styled.div`  font-size: 12px;
-  font-weight: 600;
-  color: #00aaff;
-  font-family: 'Source Code Pro', monospace;
-  text-shadow: 0 0 6px rgba(0, 170, 255, 0.3);`;
 
 const RightPanel = ({ project, isTransitioning }) => {
   const [isZoomed, setIsZoomed] = useState(false);
@@ -885,22 +807,8 @@ const RightPanel = ({ project, isTransitioning }) => {
               transition={{ duration: 0.3, delay: 0.1 }}
               whileHover={{ scale: 1.05 }}
             >
-              <PerformanceCardContent>
-                <PerformanceLabelWrapper>
-                  <PerformanceMainLabel>准确率</PerformanceMainLabel>
-                </PerformanceLabelWrapper>
-                <PerformanceValueWrapper>
-                  <PerformanceMainValue>{project.performance.accuracy}</PerformanceMainValue>
-                  {project.performance.accCompare !== undefined && (
-                    <PerformanceComparison positive={!String(project.performance.accCompare).startsWith('-')}>
-                      {String(project.performance.accCompare).startsWith('-') ? '↓' : '↑'}
-                      {String(project.performance.accCompare).startsWith('-')
-                        ? String(project.performance.accCompare).substring(1)
-                        : project.performance.accCompare}
-                    </PerformanceComparison>
-                  )}
-                </PerformanceValueWrapper>
-              </PerformanceCardContent>
+              <PerformanceValue>{project.performance.accuracy}</PerformanceValue>
+              <PerformanceLabel>准确率</PerformanceLabel>
             </PerformanceCard>
             <PerformanceCard
               key={`${project.basicInfo.title}-responseTime`}
@@ -909,22 +817,8 @@ const RightPanel = ({ project, isTransitioning }) => {
               transition={{ duration: 0.3, delay: 0.2 }}
               whileHover={{ scale: 1.05 }}
             >
-              <PerformanceCardContent>
-                <PerformanceLabelWrapper>
-                  <PerformanceMainLabel>响应时间</PerformanceMainLabel>
-                </PerformanceLabelWrapper>
-                <PerformanceValueWrapper>
-                  <PerformanceMainValue>{project.performance.responseTime}</PerformanceMainValue>
-                  {project.performance.resCompare !== undefined && (
-                    <PerformanceComparison positive={!String(project.performance.resCompare).startsWith('-')}>
-                      {String(project.performance.resCompare).startsWith('-') ? '↓' : '↑'}
-                      {String(project.performance.resCompare).startsWith('-')
-                        ? String(project.performance.resCompare).substring(1)
-                        : project.performance.resCompare}
-                    </PerformanceComparison>
-                  )}
-                </PerformanceValueWrapper>
-              </PerformanceCardContent>
+              <PerformanceValue>{project.performance.responseTime}</PerformanceValue>
+              <PerformanceLabel>响应时间</PerformanceLabel>
             </PerformanceCard>
             <PerformanceCard
               key={`${project.basicInfo.title}-processingSpeed`}
@@ -933,22 +827,8 @@ const RightPanel = ({ project, isTransitioning }) => {
               transition={{ duration: 0.3, delay: 0.3 }}
               whileHover={{ scale: 1.05 }}
             >
-              <PerformanceCardContent>
-                <PerformanceLabelWrapper>
-                  <PerformanceMainLabel>处理速度</PerformanceMainLabel>
-                </PerformanceLabelWrapper>
-                <PerformanceValueWrapper>
-                  <PerformanceMainValue>{project.performance.processingSpeed}</PerformanceMainValue>
-                  {project.performance.proCompare !== undefined && (
-                    <PerformanceComparison positive={!String(project.performance.proCompare).startsWith('-')}>
-                      {String(project.performance.proCompare).startsWith('-') ? '↓' : '↑'}
-                      {String(project.performance.proCompare).startsWith('-')
-                        ? String(project.performance.proCompare).substring(1)
-                        : project.performance.proCompare}
-                    </PerformanceComparison>
-                  )}
-                </PerformanceValueWrapper>
-              </PerformanceCardContent>
+              <PerformanceValue>{project.performance.processingSpeed}</PerformanceValue>
+              <PerformanceLabel>处理速度</PerformanceLabel>
             </PerformanceCard>
             <PerformanceCard
               key={`${project.basicInfo.title}-stability`}
@@ -957,75 +837,35 @@ const RightPanel = ({ project, isTransitioning }) => {
               transition={{ duration: 0.3, delay: 0.4 }}
               whileHover={{ scale: 1.05 }}
             >
-              <PerformanceCardContent>
-                <PerformanceLabelWrapper>
-                  <PerformanceMainLabel>稳定性</PerformanceMainLabel>
-                </PerformanceLabelWrapper>
-                <PerformanceValueWrapper>
-                  <PerformanceMainValue>{project.performance.stability}</PerformanceMainValue>
-                  {project.performance.staCompare !== undefined && (
-                    <PerformanceComparison positive={!String(project.performance.staCompare).startsWith('-')}>
-                      {String(project.performance.staCompare).startsWith('-') ? '↓' : '↑'}
-                      {String(project.performance.staCompare).startsWith('-')
-                        ? String(project.performance.staCompare).substring(1)
-                        : project.performance.staCompare}
-                    </PerformanceComparison>
-                  )}
-                </PerformanceValueWrapper>
-              </PerformanceCardContent>
+              <PerformanceValue>{project.performance.stability}</PerformanceValue>
+              <PerformanceLabel>稳定性</PerformanceLabel>
             </PerformanceCard>
           </PerformanceCardsGrid>
         </ProgressSection>
 
-        {/* Token消耗统计 */}
-        <TokenSection>
-          <ProgressLabel>Token消耗</ProgressLabel>
-          <TokenGrid>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-token-todayCount`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>今日总消耗</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.tokenParse.todayCount}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-token-inCount`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>输入Token</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.tokenParse.inCount}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-token-outCount`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>输出Token</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.tokenParse.outCount}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-token-avgTime`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>平均处理时长</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.tokenParse.avgTime}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-          </TokenGrid>
-        </TokenSection>
+
+        {/* 横进度柱状图 */}
+        <ApplicationInfoSection>
+          <ProgressLabel>横进度柱状图</ProgressLabel>
+          <CoolMetricsList>
+            {project.barValue.map((metric, index) => (
+              <CoolMetricItem key={`${project.basicInfo.title}-evaluation-${index}`}>
+                <MetricLabel>{metric.label}</MetricLabel>
+                <CoolProgressBar>
+                  <CoolProgressFill
+                    width={`${metric.percentage}%`}
+                    color={metric.color}
+                    index={index}
+                  />
+                </CoolProgressBar>
+                <CoolMetricValue>{metric.value}</CoolMetricValue>
+              </CoolMetricItem>
+            ))}
+          </CoolMetricsList>
+        </ApplicationInfoSection>
 
 
-
+       
          {/* 24小时调用趋势折线图 */}
         <ChartCard>
           <ChartTitle>24小时调用趋势</ChartTitle>

@@ -524,7 +524,7 @@ const SegmentedBlock = styled.div`
 // 翻页卡片
 const SkillCardContainer = styled.div`
   position: relative;
-  height: 80px;
+  height: 120px;
   perspective: 1000px;
 `;
 
@@ -645,19 +645,6 @@ const StartTimeValue = styled.div`
 const PerformanceCardsGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-`;
-
-// token消耗 - 紧凑卡片式
-const TokenGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-`;
-// 推荐配置 - 紧凑卡片式
-const RequirementsGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
   gap: 8px;
 `;
 
@@ -1024,62 +1011,6 @@ const ArchitectureValue = styled.div`
   line-height: 1.4;
 `;
 
-const TokenSection = styled.div`
-  margin-bottom: 32px;
- `;
-//推荐配置
-const RequirementsSection = styled.div`
-  margin-bottom: 32px;
- `;
-
- // 添加新的样式组件用于水平布局
-const HorizontalPerformanceCard = styled(motion.div)`  background: rgba(0, 170, 255, 0.05);
-  border: 1px solid rgba(0, 170, 255, 0.2);
-  border-radius: 6px;
-  padding: 10px 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-
-  &:hover {
-    background: rgba(0, 170, 255, 0.1);
-    border-color: rgba(0, 170, 255, 0.4);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 170, 255, 0.2);
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    animation: cardShimmer 3s infinite;
-  }
-
-  @keyframes cardShimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
-  }`;
-
-const HorizontalPerformanceValue = styled.div`  font-size: 14px;
-  font-weight: 600;
-  color: #00aaff;
-  font-family: 'Source Code Pro', monospace;
-  text-shadow: 0 0 6px rgba(0, 170, 255, 0.3);`;
-
-const HorizontalPerformanceLabel = styled.div`  font-size: 12px;
-  color: #cccccc;
-  font-family: 'Inter', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;`;
-
-
 const LeftPanel = ({ project, isTransitioning }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -1107,10 +1038,56 @@ const LeftPanel = ({ project, isTransitioning }) => {
         
                     {/* 项目启动时间 */}
                     <ProjectStartTime>
-                      <StartTimeLabel>项目周期</StartTimeLabel>
-                      <StartTimeValue>{project.basicInfo.projectTime}</StartTimeValue>
+                      <StartTimeLabel>项目启动</StartTimeLabel>
+                      <StartTimeValue>{project.basicInfo.startTime}</StartTimeValue>
                     </ProjectStartTime>
 
+        {/* 智能体性能指标 */}
+        <ProgressSection>
+          <ProgressLabel>智能体性能指标</ProgressLabel>
+          <PerformanceCardsGrid>
+            <PerformanceCard
+              key={`${project.basicInfo.title}-accuracy`}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <PerformanceValue>{project.performance.accuracy}</PerformanceValue>
+              <PerformanceLabel>准确率</PerformanceLabel>
+            </PerformanceCard>
+            <PerformanceCard
+              key={`${project.basicInfo.title}-responseTime`}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <PerformanceValue>{project.performance.responseTime}</PerformanceValue>
+              <PerformanceLabel>响应时间</PerformanceLabel>
+            </PerformanceCard>
+            <PerformanceCard
+              key={`${project.basicInfo.title}-processingSpeed`}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <PerformanceValue>{project.performance.processingSpeed}</PerformanceValue>
+              <PerformanceLabel>处理速度</PerformanceLabel>
+            </PerformanceCard>
+            <PerformanceCard
+              key={`${project.basicInfo.title}-stability`}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <PerformanceValue>{project.performance.stability}</PerformanceValue>
+              <PerformanceLabel>稳定性</PerformanceLabel>
+            </PerformanceCard>
+          </PerformanceCardsGrid>
+        </ProgressSection>
 
         {/* 应用维度评估 */}
         <ApplicationInfoSection>
@@ -1131,64 +1108,6 @@ const LeftPanel = ({ project, isTransitioning }) => {
             ))}
           </CoolMetricsList>
         </ApplicationInfoSection>
-
-        {/* 推荐配置 */}
-        <RequirementsSection>
-          <ProgressLabel>推荐配置</ProgressLabel>
-          <RequirementsGrid>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-Requirements-cpu`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>CPU</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.cpu}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-requirements-memory`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>内存</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.memory}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-requirements-disk`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>磁盘</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.disk}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-requirements-gpu`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>显卡</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.gpu}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-requirements-llmType`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>大模型</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.llmType}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-          </RequirementsGrid>
-        </RequirementsSection>
-
 
         {/* 核心技能卡片 */}
         <SkillsSection>
@@ -1218,6 +1137,22 @@ const LeftPanel = ({ project, isTransitioning }) => {
             </SkillIndicators>
           </SkillCardContainer>
         </SkillsSection>
+
+        {/* 技术栈占比 */}
+        <TechProficiencySection>
+          <ProgressLabel>技术栈占比</ProgressLabel>
+          <TechGrid>
+            {project.techStack.map((tech, index) => (
+              <TechProficiencyCard key={`${project.basicInfo.title}-${tech.name}-${index}`}>
+                <TechProficiencyCircle progress={tech.percentage} index={index}>
+                  <TechProficiencyValue>{tech.percentage}%</TechProficiencyValue>
+                </TechProficiencyCircle>
+                <TechProficiencyLabel>{tech.name}</TechProficiencyLabel>
+              </TechProficiencyCard>
+            ))}
+          </TechGrid>
+        </TechProficiencySection>
+
 
       </PanelContent>
     </Panel>

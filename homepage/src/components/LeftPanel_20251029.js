@@ -654,12 +654,6 @@ const TokenGrid = styled.div`
   grid-template-columns: 1fr;
   gap: 8px;
 `;
-// 推荐配置 - 紧凑卡片式
-const RequirementsGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-`;
 
 const PerformanceCard = styled(motion.div)`
   background: rgba(0, 170, 255, 0.05);
@@ -1027,10 +1021,6 @@ const ArchitectureValue = styled.div`
 const TokenSection = styled.div`
   margin-bottom: 32px;
  `;
-//推荐配置
-const RequirementsSection = styled.div`
-  margin-bottom: 32px;
- `;
 
  // 添加新的样式组件用于水平布局
 const HorizontalPerformanceCard = styled(motion.div)`  background: rgba(0, 170, 255, 0.05);
@@ -1132,62 +1122,52 @@ const LeftPanel = ({ project, isTransitioning }) => {
           </CoolMetricsList>
         </ApplicationInfoSection>
 
-        {/* 推荐配置 */}
-        <RequirementsSection>
-          <ProgressLabel>推荐配置</ProgressLabel>
-          <RequirementsGrid>
+        {/* Token消耗统计 */}
+        <TokenSection>
+          <ProgressLabel>Token消耗</ProgressLabel>
+          <TokenGrid>
             <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-Requirements-cpu`}
+              key={`${project.basicInfo.title}-token-todayCount`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.1 }}
               whileHover={{ scale: 1.05 }}
             >
-              <HorizontalPerformanceLabel>CPU</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.cpu}</HorizontalPerformanceValue>
+              <HorizontalPerformanceLabel>今日总消耗</HorizontalPerformanceLabel>
+              <HorizontalPerformanceValue>{project.tokenParse.todayCount}</HorizontalPerformanceValue>
             </HorizontalPerformanceCard>
             <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-requirements-memory`}
+              key={`${project.basicInfo.title}-token-inCount`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
               whileHover={{ scale: 1.05 }}
             >
-              <HorizontalPerformanceLabel>内存</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.memory}</HorizontalPerformanceValue>
+              <HorizontalPerformanceLabel>输入Token</HorizontalPerformanceLabel>
+              <HorizontalPerformanceValue>{project.tokenParse.inCount}</HorizontalPerformanceValue>
             </HorizontalPerformanceCard>
             <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-requirements-disk`}
+              key={`${project.basicInfo.title}-token-outCount`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
               whileHover={{ scale: 1.05 }}
             >
-              <HorizontalPerformanceLabel>磁盘</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.disk}</HorizontalPerformanceValue>
+              <HorizontalPerformanceLabel>输出Token</HorizontalPerformanceLabel>
+              <HorizontalPerformanceValue>{project.tokenParse.outCount}</HorizontalPerformanceValue>
             </HorizontalPerformanceCard>
             <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-requirements-gpu`}
+              key={`${project.basicInfo.title}-token-avgTime`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
               whileHover={{ scale: 1.05 }}
             >
-              <HorizontalPerformanceLabel>显卡</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.gpu}</HorizontalPerformanceValue>
+              <HorizontalPerformanceLabel>平均处理时长</HorizontalPerformanceLabel>
+              <HorizontalPerformanceValue>{project.tokenParse.avgTime}</HorizontalPerformanceValue>
             </HorizontalPerformanceCard>
-            <HorizontalPerformanceCard
-              key={`${project.basicInfo.title}-requirements-llmType`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <HorizontalPerformanceLabel>大模型</HorizontalPerformanceLabel>
-              <HorizontalPerformanceValue>{project.requirements.llmType}</HorizontalPerformanceValue>
-            </HorizontalPerformanceCard>
-          </RequirementsGrid>
-        </RequirementsSection>
+          </TokenGrid>
+        </TokenSection>
 
 
         {/* 核心技能卡片 */}

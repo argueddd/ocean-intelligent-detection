@@ -118,45 +118,4 @@ server {
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
     }
 
-    # dify应用
-    location /dify/app/ {
-        proxy_pass http://192.168.128.1:9999/;
-        proxy_set_header Host localhost;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
-    }
- 	
-	
-    # 语音方言解析
-    location /voice/app/ {
-        proxy_pass http://dolphin_agent:8080/;
-        proxy_set_header Host localhost;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
-    }
-
-    # 咸鱼监控
-    location /goofish/monitor/app/ {
-        proxy_pass http://ai-goofish-monitor-app:8009/;
-        proxy_set_header Host localhost;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
-    }
-
-
-    location /ai-diagnosis/app/ {
-        proxy_pass http://04d71585bf2c:5050/;
-        proxy_set_header Host localhost;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
-    }
 }
-

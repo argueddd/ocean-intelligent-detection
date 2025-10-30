@@ -5,7 +5,7 @@ import LeftPanel from './components/LeftPanel';
 import MainDisplay from './components/MainDisplay';
 import RightPanel from './components/RightPanel';
 import BottomNavigation from './components/BottomNavigation';
-import { projectConfig, projectConfig2, projectConfig3, projectConfig4, projectConfig5, projectConfig6, projectConfig7 } from './data/projectConfig';
+import { projectConfig, projectConfig2, projectConfig3, projectConfig4, projectConfig5 } from './data/projectConfig';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -115,100 +115,12 @@ const Container = styled.div`
   }
 `;
 
-// 添加悬浮机器人按钮样式
-const FloatingRobotButton = styled.button`  position: fixed;
-  bottom: 100px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #00c6ff, #0072ff);
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0, 114, 255, 0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 25px rgba(0, 114, 255, 0.7);
-  }
-
-  &::after {
-//    content: "🤖";
-    font-size: 28px;
-  }
-
-  @media (max-width: 768px) {
-    width: 50px;
-    height: 50px;
-    bottom: 80px;
-    right: 20px;
-  }`;
-
-// 添加聊天窗口遮罩层样式
-const ChatOverlay = styled.div`  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;`;
-
-// 添加聊天窗口容器样式
-const ChatWindow = styled.div`  width: 90%;
-  max-width: 1200px;
-  height: 80%;
-  background: #1a1a2e;
-  border-radius: 15px;
-  overflow: hidden;
-  box-shadow: 0 0 40px rgba(0, 114, 255, 0.6);
-  border: 1px solid rgba(0, 150, 255, 0.3);
-  position: relative;
-
-  @media (max-width: 768px) {
-    width: 95%;
-    height: 85%;
-  }`;
-
-// 添加关闭按钮样式
-const CloseButton = styled.button`  position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #ff4d4d;
-  border: none;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  z-index: 2001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s;
-
-  &:hover {
-    background: #ff1a1a;
-  }`;
-
-
-
 function App() {
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false); // 添加这行
 
   // 创建项目数组，包含所有配置的项目
-  const projects = [projectConfig, projectConfig2, projectConfig3, projectConfig4, projectConfig5, projectConfig6, projectConfig7];
+  const projects = [projectConfig, projectConfig2, projectConfig3, projectConfig4, projectConfig5];
   const currentProject = projects[currentProjectIndex];
 
   const handleProjectChange = useCallback((index) => {
@@ -256,16 +168,6 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, [currentProjectIndex, handleDemoClick, handleProjectChange, projects.length]);
 
-  // 打开聊天窗口
-  const openChat = () => {
-    setIsChatOpen(true);
-  };
-
-  // 关闭聊天窗口
-  const closeChat = () => {
-    setIsChatOpen(false);
-  };
-
   return (
     <>
       <GlobalStyle />
@@ -291,35 +193,6 @@ function App() {
         totalProjects={projects.length}
         onProjectChange={handleProjectChange}
       />
-
-      {/* 悬浮机器人按钮 */}
-      <FloatingRobotButton onClick={openChat} aria-label="打开AI助手">
-          <img
-            src="/robot-icon.png"
-            alt="AI助手"
-            style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%'
-            }}
-          />
-      </FloatingRobotButton>
-
-      {/* 聊天窗口弹窗 */}
-      {isChatOpen && (
-        <ChatOverlay>
-          <ChatWindow>
-            <CloseButton onClick={closeChat} aria-label="关闭聊天窗口">×</CloseButton>
-            <iframe
-              src="http://47.115.210.14:9999/chatbot/auNVmzkiHn6XIOTZ"
-              style={{ width: '100%', height: '100%', minHeight: '700px' }}
-              frameBorder="0"
-              allow="microphone"
-              title="AI服务推荐助手"
-            />
-          </ChatWindow>
-        </ChatOverlay>
-      )}
     </>
   );
 }
