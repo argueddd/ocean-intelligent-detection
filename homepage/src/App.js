@@ -311,7 +311,7 @@ function App() {
           <ChatWindow>
             <CloseButton onClick={closeChat} aria-label="关闭聊天窗口">×</CloseButton>
             <iframe
-              src="http://47.115.210.14:9999/chatbot/auNVmzkiHn6XIOTZ"
+              src="/dify/app/chatbot/auNVmzkiHn6XIOTZ"
               style={{ width: '100%', height: '100%', minHeight: '700px' }}
               frameBorder="0"
               allow="microphone"
