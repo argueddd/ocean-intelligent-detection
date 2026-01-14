@@ -1,6 +1,7 @@
 services:
   # 前端服务
   homepagev2:
+    build: .
     image: homepage:v2
     container_name: homepagev2
     networks:
