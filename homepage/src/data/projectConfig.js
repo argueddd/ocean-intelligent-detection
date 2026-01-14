@@ -281,7 +281,7 @@ export const projectConfig4 = {
   "basicInfo": {
     "startTime": "2025.03",
     "projectTime": "16周",
-    "title": "内审智能体能力库",
+    "title": "内审AI+能力平台",
     "subtitle": "融合大模型的智能内审与风险洞察系统",
     "description": "集成投诉风险分类、往来金额异常诊断、OCR票据识别与照片合理性稽核等多项能力，基于大模型驱动实现数据审计、风险分析与可视化汇总，提升企业内控自动化水平。",
     "features": ["风险分类", "金额诊断", "OCR提取", "视觉稽核", "可视化分析"]
@@ -377,7 +377,7 @@ export const projectConfig4 = {
 
   "media": {
     "videoPath": "/data/demo_audit_engine.mp4",
-    "demoUrl": "/intelligent-audit/app/"
+    "demoUrl": "/ai-frontend/app/"
   }
 };
 

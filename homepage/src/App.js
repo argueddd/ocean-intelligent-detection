@@ -208,7 +208,7 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false); // 添加这行
 
   // 创建项目数组，包含所有配置的项目
-  const projects = [projectConfig, projectConfig2, projectConfig3, projectConfig4, projectConfig5, projectConfig6, projectConfig7];
+  const projects = [projectConfig, projectConfig4, projectConfig5, projectConfig6, projectConfig7];
   const currentProject = projects[currentProjectIndex];
 
   const handleProjectChange = useCallback((index) => {
