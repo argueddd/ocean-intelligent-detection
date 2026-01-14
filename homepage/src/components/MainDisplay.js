@@ -246,20 +246,10 @@ const MainDisplay = ({ project, projectIndex, onDemoClick, isTransitioning }) =>
   const [showVideo, setShowVideo] = useState(false);
   const projectNumber = String(projectIndex + 1).padStart(2, '0');
   
-  // 定义项目链接映射
-  const projectLinks = [
-    '/contract-review/app/', // 合同审核应用
-    '/norms-review/app/ ', // 合同审核应用
-    '/rag/app/', // 智源知识沉淀引擎
-    '/intelligent-audit/app/', // 内审智能体
-    '/goofish/monitor/app/', // 二手平台(咸鱼)智能监控机器人
-    '/ai-diagnosis/app/', // 有线故障诊断智能体
-    '/voice/app/', // 语音识别与分析
-  ];
-  
   const handleDemoClick = () => {
-    const link = projectLinks[projectIndex] || '/';
-    console.log('Demo button clicked! Project index:', projectIndex, 'Link:', link);
+    // 直接从当前项目的配置中获取链接，而不是使用硬编码的数组
+    const link = project.media?.demoUrl || '/';
+    console.log('Demo button clicked! Project:', project.basicInfo.title, 'Link:', link);
     window.open(link, '_blank');
   };
   
