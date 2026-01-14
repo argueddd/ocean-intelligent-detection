@@ -2,7 +2,7 @@ services:
   # 前端服务
   homepagev2:
     build: .
-    image: homepage:v2
+    image: homepagev2:latest
     container_name: homepagev2
     networks:
       - proxy-tier
