@@ -173,10 +173,10 @@ export const projectConfig2 = {
     "标准版本差异对比与追溯",
     "问题定位与整改建议生成",
     "批量方案快速稽核"
-  ],
+  ],// 媒体文件路径
   "media": {
     "videoPath": "/data/demo_design_audit.mp4",
-    "demoUrl": "/norms-review/app/"
+    "demoUrl": "/homepage/"
   }
 };
 
