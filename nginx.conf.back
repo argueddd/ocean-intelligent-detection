@@ -1,10 +1,10 @@
 server {
     listen 80;
-    server_name agent-show.com www.agent-show.com;
+    server_name www.agent-show.com;
 
-    # HTTP 自动跳转 HTTPS (强制跳转到 www 以匹配证书)
+    # HTTP 自动跳转 HTTPS
     location / {
-        return 301 https://www.agent-show.com$request_uri;
+        return 301 https://$host$request_uri;
     }
 }
 
