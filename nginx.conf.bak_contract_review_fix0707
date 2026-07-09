@@ -1,10 +1,10 @@
 server {
     listen 80;
-    server_name www.agent-show.com;
+    server_name agent-show.com www.agent-show.com;
 
-    # HTTP 自动跳转 HTTPS
+    # HTTP 自动跳转 HTTPS (强制跳转到 www 以匹配证书)
     location / {
-        return 301 https://$host$request_uri;
+        return 301 https://www.agent-show.com$request_uri;
     }
 }
 
@@ -29,9 +29,173 @@ server {
     add_header Strict-Transport-Security "max-age=63072000" always;
     add_header Content-Security-Policy "upgrade-insecure-requests" always;
 
+    # BEGIN wireless-network-npt
+    # wireless-network-npt big-screen frontend
+    location = /wireless-network-npt {
+        return 301 /wireless-network-npt/;
+    }
+
+    location /wireless-network-npt/ {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        rewrite ^/wireless-network-npt/?(.*)$ /$1 break;
+        proxy_pass $wireless_npt_frontend;
+        proxy_http_version 1.1;
+        proxy_set_header Host localhost;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+    }
+
+    location /api/big-screen/ {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        proxy_pass $wireless_npt_frontend$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+    }
+
+    # BEGIN wireless-network-npt-qa-api
+    location = /api/sessions {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        proxy_pass $wireless_npt_frontend$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+    }
+
+    location /api/sessions/ {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        proxy_pass $wireless_npt_frontend$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+    }
+
+    location = /api/chat/stream {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        proxy_pass $wireless_npt_frontend$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+    }
+
+    location = /api/feedback-records {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        proxy_pass $wireless_npt_frontend$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+    }
+
+    location /api/feedback-records/ {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        proxy_pass $wireless_npt_frontend$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+    }
+
+    location /api/services/data/ {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        proxy_pass $wireless_npt_frontend$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+    }
+
+    location /api/services/rag/ {
+        auth_basic "Wireless Network NPT";
+        auth_basic_user_file /etc/nginx/conf.d/wireless-network-npt.htpasswd;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $wireless_npt_frontend http://wireless-network-npt-frontend:80;
+        proxy_pass $wireless_npt_frontend$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_buffering off;
+    }
+    # END wireless-network-npt-qa-api
+    # END wireless-network-npt
+
     # 主页 - React多agent展示
     location / {
-        proxy_pass http://homepagev2:80;
+        proxy_pass http://qwenpaw:8088;
+	# proxy_pass http://homepagev2:80;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -42,6 +206,33 @@ server {
         proxy_set_header Connection "upgrade";
     }
 
+    location /tech-news/app/ { 
+        proxy_pass http://tech-news-daily-frontend:80/;  
+        proxy_set_header Host localhost; 
+        proxy_set_header X-Real-IP $remote_addr; 
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; 
+        proxy_set_header X-Forwarded-Proto $scheme; 
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504; 
+    } 
+
+    # 后端 API 服务 (代理到 M 域容器的 8001 端口)
+    location /tech-news/api/ { 
+        proxy_pass http://m-domain-service:8001/api/;  
+        proxy_set_header Host $host; 
+        proxy_set_header X-Real-IP $remote_addr; 
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; 
+        proxy_set_header X-Forwarded-Proto $scheme; 
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504; 
+    }
+    
+    # 静态资源 (代理到后端的 static 目录以支持大模型生成的配图等资源)
+    location /tech-news/static/ { 
+        proxy_pass http://m-domain-service:8001/static/;  
+        proxy_set_header Host $host; 
+        proxy_set_header X-Real-IP $remote_addr; 
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; 
+        proxy_set_header X-Forwarded-Proto $scheme; 
+    }
     # 合同审核后端 API
     location /contract-review/api/ {
         proxy_pass http://contract-review-backend:5000/;
@@ -74,7 +265,7 @@ server {
 
     # 内审智能体前端应用
     location /intelligent-audit/app/ {
-        proxy_pass http://audit-frontend:80/;
+        proxy_pass http://192.168.32.13:80;
         proxy_set_header Host localhost;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -91,9 +282,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
     }
-
-
-
     location /rag/app/ {
         proxy_pass http://rag-frontend:80/;
         proxy_set_header Host localhost;
@@ -150,8 +338,11 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
     }
+
+
 
     # 审核产品前端应用
     location /ai-frontend/app/ {
@@ -205,26 +396,15 @@ server {
 #    }                                                                                        
 #    location /rssAgent-api/ {                                                                
 #        proxy_pass http://rss-news-backend:8000;                                             
-#        proxy_set_header Host $host;                                                         
-#        proxy_set_header X-Real-IP $remote_addr;                                             
+#        proxy_set_header X-Forwarded-Proto $scheme;
+#
+#      proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+#
+#    # WebSocket 支持（很多 AI 前端需要）
+#      proxy_http_version 1.1;
+#      proxy_set_header Upgrade $http_upgrade;
+#      proxy_set_header Connection "upgrade";
 #    }
-
-    # WNO GPT 应用
-    location /llm_npt/ {
-      proxy_pass http://wno-gpt-app:80/llm_npt/;
-
-      proxy_set_header Host localhost;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto $scheme;
-
-      proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
-
-    # WebSocket 支持（很多 AI 前端需要）
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection "upgrade";
-    }
 
 
     # ai-universe-dashboard
