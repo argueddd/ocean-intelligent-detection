@@ -1,13 +1,48 @@
 services:
-  # 前端服务
   homepagev2:
     build: .
     image: homepagev2:latest
     container_name: homepagev2
+    depends_on:
+      portal-auth:
+        condition: service_healthy
     networks:
       - proxy-tier
+      - homepage-internal
     restart: unless-stopped
+
+  portal-auth:
+    build: ../portal-auth
+    image: portal-auth:latest
+    container_name: portal-auth
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_SECRET_KEY: ${PORTAL_AUTH_SECRET_KEY:-local-development-only-change-me}
+      CAS_PUBLIC_URL: ${CAS_PUBLIC_URL:-http://127.0.0.1:9000/cas}
+      CAS_INTERNAL_URL: ${CAS_INTERNAL_URL:-http://host.docker.internal:9000/cas}
+      CAS_SERVICE_URL: ${CAS_SERVICE_URL:-http://127.0.0.1/api/auth/callback}
+      PORTAL_PUBLIC_URL: ${PORTAL_PUBLIC_URL:-http://127.0.0.1}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-3600}
+      TRUST_PROXY: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/auth/health', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - homepage-internal
+    restart: unless-stopped
+
 networks:
   proxy-tier:
     external: true
-
+  homepage-internal:
+    driver: bridge

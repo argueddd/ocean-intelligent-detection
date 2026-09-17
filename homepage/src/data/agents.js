@@ -1,3 +1,10 @@
+function applicationUrl(environmentName, fallback = "") {
+  const configured = import.meta.env[environmentName];
+  return typeof configured === "string" && configured.trim()
+    ? configured.trim()
+    : fallback;
+}
+
 export const agents = [
   {
     id: "audit-workbench",
@@ -7,7 +14,7 @@ export const agents = [
     description:
       "统一承接稽核任务与规则，自动发现异常线索，帮助团队快速下钻原因并跟踪整改结果。",
     role: "智能稽核",
-    link: "?agent=audit-workbench",
+    launchUrl: applicationUrl("VITE_AUDIT_WORKBENCH_URL"),
     shape: 0,
     capabilities: [
       ["合同稽核", "核验合同条款、计费规则与业务数据，识别履约、结算和风险异常。"],
@@ -24,7 +31,7 @@ export const agents = [
     description:
       "结合性能指标、告警与区域特征识别网络瓶颈，辅助制定优化方案并观察执行效果。",
     role: "网络优化",
-    link: "?agent=network-optimization",
+    launchUrl: applicationUrl("VITE_NETWORK_OPTIMIZATION_URL"),
     shape: 1,
     capabilities: [
       ["多源感知", "汇聚性能指标、告警、工参、路测和用户投诉数据。"],
@@ -41,7 +48,10 @@ export const agents = [
     description:
       "连接内部经营数据与外部客户信息，完成实体匹配、差异识别和关键线索整理。",
     role: "客户数据核验",
-    link: "?agent=key-account-comparison",
+    launchUrl: applicationUrl(
+      "VITE_KEY_ACCOUNT_COMPARISON_URL",
+      "http://127.0.0.1:9100/vip_139/report/api/auth/sso/login",
+    ),
     shape: 2,
     capabilities: [
       ["内部解读", "清洗企业名称、统一信用代码、地址和联系方式。"],
@@ -58,7 +68,7 @@ export const agents = [
     description:
       "围绕候选区域分析客流、竞争、消费与覆盖能力，形成可比较的选址判断。",
     role: "选址决策",
-    link: "?agent=smart-store-selection",
+    launchUrl: applicationUrl("VITE_SMART_STORE_SELECTION_URL"),
     shape: 3,
     capabilities: [
       ["商圈画像", "分析客流、人口、消费、交通、POI 和区域发展情况。"],
@@ -75,7 +85,7 @@ export const agents = [
     description:
       "理解商品卖点、目标人群与直播阶段，组织开场、讲解、互动和转化话术。",
     role: "直播内容生成",
-    link: "?agent=live-script",
+    launchUrl: applicationUrl("VITE_LIVE_SCRIPT_URL"),
     shape: 4,
     capabilities: [
       ["商品建模", "从商品资料中提取卖点、参数、适用人群和常见异议。"],
@@ -92,7 +102,7 @@ export const agents = [
     description:
       "持续跟踪重点领域，对信息进行筛选、归类与摘要，帮助团队快速掌握重要变化。",
     role: "要闻聚合",
-    link: "?agent=news-gathering",
+    launchUrl: applicationUrl("VITE_NEWS_GATHERING_URL"),
     shape: 5,
     capabilities: [
       ["多源采集", "接入新闻、网站、公众号和内部信息源并自动去重。"],
@@ -109,7 +119,7 @@ export const agents = [
     description:
       "接入制度、文档和项目经验，理解问题上下文，输出有来源、可追溯的知识回答。",
     role: "知识问答",
-    link: "?agent=knowledge-harness",
+    launchUrl: applicationUrl("VITE_KNOWLEDGE_HARNESS_URL"),
     shape: 6,
     capabilities: [
       ["知识运营", "完成知识接入、切分、标签、版本、权限和有效期管理。"],
@@ -126,7 +136,7 @@ export const agents = [
     description:
       "理解业务问题并转换为数据查询，返回指标结果、变化对比和可继续追问的分析线索。",
     role: "数据问答",
-    link: "?agent=data-harness",
+    launchUrl: applicationUrl("VITE_DATA_HARNESS_URL"),
     shape: 7,
     capabilities: [
       ["指标建模", "统一指标、维度、统计粒度、业务口径和数据权限。"],
@@ -143,7 +153,10 @@ export const agents = [
     description:
       "作为九个产品的统一入口，理解复杂任务、选择专业智能体并协调多智能体协作。",
     role: "智能体路由",
-    link: "?agent=agent-hub",
+    launchUrl: applicationUrl(
+      "VITE_AGENT_HUB_URL",
+      "http://127.0.0.1:9888/agent_hub/api/auth/sso/login",
+    ),
     shape: 8,
     capabilities: [
       ["注册管理", "管理智能体能力、接口、版本、权限和可用状态。"],

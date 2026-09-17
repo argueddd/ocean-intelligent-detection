@@ -21,6 +21,9 @@ import {
   MicrophoneStage,
   ShareNetwork,
   ShieldCheck,
+  SignIn,
+  SignOut,
+  UserCircle,
 } from "@phosphor-icons/react";
 import gsap from "gsap";
 import { agents } from "./data/agents";
@@ -69,9 +72,72 @@ function getInitialAgent() {
   return found >= 0 ? found : 0;
 }
 
+function currentPortalPath(extraQuery = {}) {
+  const url = new URL(window.location.href);
+  Object.entries(extraQuery).forEach(([name, value]) => {
+    if (value) url.searchParams.set(name, value);
+    else url.searchParams.delete(name);
+  });
+  return `${url.pathname}${url.search}`;
+}
+
+function authenticationUrl(returnTo) {
+  return `/api/auth/login?return_to=${encodeURIComponent(returnTo)}`;
+}
+
+function AuthControl({ auth, loginHref, onLogout }) {
+  if (auth.status === "loading") {
+    return (
+      <span className="auth-loading" role="status">
+        <span aria-hidden="true" />
+        身份校验中
+      </span>
+    );
+  }
+
+  if (auth.status === "authenticated") {
+    const displayName = auth.user.displayName || auth.user.username;
+    return (
+      <div className="auth-user">
+        <UserCircle size={28} weight="duotone" aria-hidden="true" />
+        <span className="auth-user-copy">
+          <span className="auth-user-state">统一认证</span>
+          <strong>{displayName}</strong>
+        </span>
+        <button
+          className="auth-logout"
+          type="button"
+          onClick={onLogout}
+          aria-label={`退出 ${displayName} 的登录`}
+          title="退出登录"
+        >
+          <SignOut size={16} weight="bold" aria-hidden="true" />
+        </button>
+      </div>
+    );
+  }
+
+  const hasError = auth.status === "error";
+  return (
+    <a
+      className={`auth-login${hasError ? " auth-login-error" : ""}`}
+      href={loginHref}
+      title={hasError ? auth.message : "使用统一账号登录"}
+    >
+      <SignIn size={18} weight="bold" aria-hidden="true" />
+      <span>{hasError ? "重新登录" : "统一登录"}</span>
+    </a>
+  );
+}
+
 function App() {
   const [activeIndex, setActiveIndex] = useState(getInitialAgent);
   const [stageStatus, setStageStatus] = useState("loading");
+  const [auth, setAuth] = useState({
+    status: "loading",
+    user: null,
+    message: "",
+  });
   const rootRef = useRef(null);
   const copyRef = useRef(null);
   const stageFrameRef = useRef(null);
@@ -80,6 +146,15 @@ function App() {
   const active = agents[activeIndex];
   const previous = agents[(activeIndex - 1 + agents.length) % agents.length];
   const next = agents[(activeIndex + 1) % agents.length];
+  const loginHref = authenticationUrl(currentPortalPath({ launch: "" }));
+  const productLoginHref = authenticationUrl(
+    currentPortalPath({ launch: active.launchUrl ? active.id : "" }),
+  );
+  const launchDisabled =
+    auth.status === "loading" ||
+    (auth.status === "authenticated" && !active.launchUrl);
+  const launchHref =
+    auth.status === "authenticated" ? active.launchUrl : productLoginHref;
 
   const handleStageReady = useCallback(() => setStageStatus("ready"), []);
   const handleStageError = useCallback(() => setStageStatus("error"), []);
@@ -130,6 +205,88 @@ function App() {
   }, [active.id]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const query = new URLSearchParams(window.location.search);
+    const callbackError = query.get("auth_error");
+
+    if (callbackError) {
+      query.delete("auth_error");
+      const cleanedUrl = `${window.location.pathname}${query.size ? `?${query}` : ""}`;
+      window.history.replaceState({}, "", cleanedUrl);
+    }
+
+    fetch("/api/auth/me", {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "认证服务暂不可用");
+        }
+        if (payload.authenticated) {
+          setAuth({ status: "authenticated", user: payload.user, message: "" });
+        } else if (callbackError) {
+          setAuth({ status: "error", user: null, message: "统一登录未完成，请重试" });
+        } else {
+          setAuth({ status: "anonymous", user: null, message: "" });
+        }
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setAuth({
+            status: "error",
+            user: null,
+            message: error.message || "认证服务暂不可用",
+          });
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (auth.status === "loading") return;
+
+    const url = new URL(window.location.href);
+    const launchAgentId = url.searchParams.get("launch");
+    if (!launchAgentId) return;
+
+    const launchAgent = agents.find((agent) => agent.id === launchAgentId);
+    url.searchParams.delete("launch");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+
+    if (auth.status === "authenticated" && launchAgent?.launchUrl) {
+      window.location.assign(launchAgent.launchUrl);
+    }
+  }, [auth.status]);
+
+  const handleLogout = useCallback(async () => {
+    setAuth((current) => ({ ...current, status: "loading" }));
+    try {
+      const returnTo = `${window.location.pathname}${window.location.search}`;
+      const response = await fetch(
+        `/api/auth/logout?return_to=${encodeURIComponent(returnTo)}`,
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { Accept: "application/json" },
+        },
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error("退出登录失败");
+      window.location.assign(payload.logoutUrl || "/");
+    } catch (error) {
+      setAuth({
+        status: "error",
+        user: null,
+        message: error.message || "退出登录失败",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     const viewport = carouselRef.current;
     const card = cardRefs.current[activeIndex];
     if (!viewport || !card) return;
@@ -174,13 +331,16 @@ function App() {
           <BrandMark />
           <span className="brand-title">智能体中枢</span>
         </a>
-        <div
-          className="header-status"
-          style={{ "--header-progress": (activeIndex + 1) / agents.length }}
-        >
-          <span>{String(activeIndex + 1).padStart(2, "0")}</span>
-          <i aria-hidden="true" />
-          <span>09</span>
+        <div className="header-tools">
+          <div
+            className="header-status"
+            style={{ "--header-progress": (activeIndex + 1) / agents.length }}
+          >
+            <span>{String(activeIndex + 1).padStart(2, "0")}</span>
+            <i aria-hidden="true" />
+            <span>09</span>
+          </div>
+          <AuthControl auth={auth} loginHref={loginHref} onLogout={handleLogout} />
         </div>
       </header>
 
@@ -234,8 +394,29 @@ function App() {
               </div>
             </div>
             <div className="hero-actions" data-animate>
-              <a className="primary-cta" href={active.link}>
-                <span>前往应用</span>
+              <a
+                className={`primary-cta${
+                  auth.status === "authenticated" && !active.launchUrl
+                    ? " is-unavailable"
+                    : ""
+                }`}
+                href={launchDisabled ? undefined : launchHref}
+                aria-disabled={launchDisabled}
+                onClick={(event) => {
+                  if (launchDisabled) event.preventDefault();
+                }}
+              >
+                <span>
+                  {auth.status === "loading"
+                    ? "身份校验中"
+                    : auth.status === "authenticated"
+                      ? active.launchUrl
+                        ? "前往应用"
+                        : "应用接入中"
+                      : active.launchUrl
+                        ? "登录并进入"
+                        : "登录后查看"}
+                </span>
                 <span className="cta-icon" aria-hidden="true">
                   <ArrowUpRight size={17} weight="bold" />
                 </span>
