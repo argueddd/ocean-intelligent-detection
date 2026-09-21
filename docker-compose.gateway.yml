@@ -1,0 +1,80 @@
+# 门户 SSO：独立 CAS + 认证后端 + 前端，统一单入口。
+# CAS 已收入项目内 cas-server/, 不再依赖外部 mock-cas-server 项目。
+#
+# 拓扑：
+#   浏览器 -> 网关:8080
+#            /            -> homepagev2 (前端静态页，门户)
+#            /api/auth/*  -> portal-auth (认证后端)
+#            /cas/*       -> cas         (项目内置 CAS 认证中心)
+#
+# CAS 登录成功 -> 302 回跳 service(即网关 /api/auth/callback) -> portal-auth 校验 -> 进入门户
+#
+# 启动:
+#   docker compose -f docker-compose.gateway.yml up -d --build
+services:
+  gateway:
+    image: nginx:alpine
+    container_name: portal-gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - homepagev2
+      - portal-auth
+      - cas
+    networks:
+      - portal-internal
+    restart: unless-stopped
+
+  homepagev2:
+    build: ./homepage
+    image: homepagev2:latest
+    container_name: homepagev2
+    networks:
+      - portal-internal
+    restart: unless-stopped
+
+  portal-auth:
+    build: ./portal-auth
+    image: portal-auth:latest
+    container_name: portal-auth
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_SECRET_KEY: ${PORTAL_AUTH_SECRET_KEY:-local-development-only-change-me}
+      CAS_PUBLIC_URL: http://127.0.0.1:8080/cas
+      CAS_INTERNAL_URL: http://cas:9000/cas
+      CAS_SERVICE_URL: http://127.0.0.1:8080/api/auth/callback
+      PORTAL_PUBLIC_URL: http://127.0.0.1:8080
+      SESSION_COOKIE_SECURE: "false"
+      SESSION_TTL_SECONDS: "3600"
+      TRUST_PROXY: "true"
+    depends_on:
+      - cas
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/auth/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - portal-internal
+    restart: unless-stopped
+
+  cas:
+    build: ./cas-server
+    image: cas-server:latest
+    container_name: cas-server
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      SECRET_KEY: ${CAS_SECRET_KEY:-cas-server-secret-change-me}
+      WANGQIYUE_PASSWORD: ${WANGQIYUE_PASSWORD:-Wqy@2026#Secure!Cas}
+      ZHANGSAN_PASSWORD: ${ZHANGSAN_PASSWORD:-Zs@2026#Secure!Cas}
+      PORT: "9000"
+    networks:
+      - portal-internal
+    restart: unless-stopped
+
+networks:
+  portal-internal:
+    driver: bridge

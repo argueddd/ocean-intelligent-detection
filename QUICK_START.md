@@ -1,15 +1,15 @@
 # 本地单点登录快速启动
 
-需要同时启动三个进程：mock CAS、门户认证后端和门户前端。
+需要同时启动三个进程：CAS 认证服务、门户认证后端和门户前端。
 
-## mock CAS
+## CAS 认证服务（项目内置）
 
 ```bash
-cd mock-cas-server
+cd agent_showcase_homepage/cas-server
 .venv/bin/python app.py
 ```
 
-监听端口：`9000`。
+监听端口：`9000`。演示账号：`wangqiyue / Wqy@2026#Secure!Cas`。
 
 ## 门户认证后端
 
