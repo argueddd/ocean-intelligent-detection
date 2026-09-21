@@ -2,19 +2,20 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import {
   ArrowLeft,
   ArrowUp,
+  Books,
+  CaretDown,
   CaretRight,
-  ChatCircleDots,
   CheckCircle,
+  CirclesThreePlus,
   ClockCounterClockwise,
   Copy,
   DotsThree,
   FileText,
   MagnifyingGlass,
   Microphone,
-  Paperclip,
   Plus,
   ShareNetwork,
-  SidebarSimple,
+  StackSimple,
   StopCircle,
   ThumbsDown,
   ThumbsUp,
@@ -22,7 +23,10 @@ import {
   UserCircle,
   X,
 } from "@phosphor-icons/react";
+import assistantHead from "../assets/assistant-head.webp";
 import { agents } from "../data/agents";
+
+const ParticleStage = React.lazy(() => import("./ParticleStage"));
 
 const starterHistory = [
   { id: "current", title: "投诉工单高频问题分析", time: "刚刚", active: true },
@@ -128,26 +132,22 @@ function BrandMark() {
   );
 }
 
-function AgentField({ activity = "waiting", compact = false, hero = false, step = 0 }) {
-  const completed = Math.min(step, plannerBlueprint.length);
-
+function RobotAvatar({ activity = "waiting", compact = false, hero = false }) {
   return (
     <span
-      className={`agent-field is-${activity}${compact ? " is-compact" : ""}${hero ? " is-hero" : ""}`}
+      className={`robot-avatar is-${activity}${compact ? " is-compact" : ""}${hero ? " is-hero" : ""}`}
       aria-hidden="true"
     >
-      <span className="agent-field-plane is-back" />
-      <span className="agent-field-plane is-front" />
-      <span className="agent-field-axis is-a" />
-      <span className="agent-field-axis is-b" />
-      <span className="agent-field-axis is-c" />
-      {plannerBlueprint.map((node, index) => (
-        <i
-          className={`agent-field-node node-${index + 1}${index < completed ? " is-done" : ""}${index === completed && activity === "working" ? " is-active" : ""}`}
-          key={node.id}
-        />
-      ))}
-      <b className="agent-field-core" />
+      <span className="robot-avatar-orbit" />
+      <span className="robot-avatar-orbit is-inner" />
+      <span className="robot-avatar-portrait">
+        <img src={assistantHead} alt="" />
+        <span className="robot-avatar-eyelids">
+          <i />
+          <i />
+        </span>
+      </span>
+      <span className="robot-avatar-scan" />
     </span>
   );
 }
@@ -190,7 +190,7 @@ function AssistantMessage({
 
   return (
     <article className={`chat-message-row is-assistant${pending ? " is-pending" : ""}`}>
-      <AgentField activity={activity} compact step={plannerStep} />
+      <RobotAvatar activity={activity} compact />
       <div className="chat-message-stack">
         <div className="chat-message-meta">
           <strong>智能助手</strong>
@@ -313,9 +313,27 @@ function PlannerNatureGlyph({ type = "sprout" }) {
     ),
     branch: (
       <>
-        <path className="planner-glyph-line planner-branch-stem" d="M5 19 12 12 19 5M11.7 12.3 7 7.6m7.8 1.6 5.1-.8" />
-        <path className="planner-glyph-fill planner-branch-leaf" d="M7.2 8C5 8.1 3.6 6.8 3.4 4.8 5.5 4.6 7 5.8 7.2 8Zm12.5.5c.2-2.1 1.7-3.3 3.7-3.2-.1 2.1-1.5 3.4-3.7 3.2Z" />
-        <circle className="planner-glyph-result planner-branch-bloom" cx="12" cy="12" r="1.45" />
+        <path
+          className="planner-glyph-line planner-branch-stem"
+          d="M3.2 21 11.8 12.6 21 3.2M8.5 15.8 4.4 12m8.7-.7-3.2-4.5m6.1 1.8 4.7-.5"
+        />
+        <path
+          className="planner-glyph-fill planner-branch-leaf is-lower"
+          d="M4.8 12.4C2.3 12.8.8 11.3.9 8.9c2.5-.3 4.2 1 3.9 3.5Z"
+        />
+        <path
+          className="planner-glyph-fill planner-branch-leaf is-middle"
+          d="M10.1 7.2C8 6.6 7.3 4.8 8.2 2.9c2.2.6 3 2.3 1.9 4.3Z"
+        />
+        <path
+          className="planner-glyph-fill planner-branch-leaf is-upper"
+          d="M20.1 8.2c.2-2.5 1.8-3.9 4.1-3.5-.2 2.5-1.7 4-4.1 3.5Z"
+        />
+        <path
+          className="planner-glyph-fill planner-branch-leaf is-tip"
+          d="M20.2 4.2c-.2-2 1-3.5 3-3.7.3 2-1 3.6-3 3.7Z"
+        />
+        <circle className="planner-glyph-result planner-branch-bloom" cx="11.8" cy="12.6" r="1.3" />
       </>
     ),
     seed: (
@@ -559,11 +577,15 @@ export default function AgentChat() {
   const [isThinking, setIsThinking] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [plannerOpen, setPlannerOpen] = useState(false);
+  const [capabilityOpen, setCapabilityOpen] = useState(false);
+  const [composerExpanded, setComposerExpanded] = useState(false);
+  const [voiceActive, setVoiceActive] = useState(false);
   const [plannerStep, setPlannerStep] = useState(plannerBlueprint.length);
   const messagesEndRef = useRef(null);
   const responseTimerRef = useRef(null);
   const plannerTimerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const composerInputRef = useRef(null);
 
   const activity = isThinking ? "working" : attachment ? "reading" : "waiting";
   const activityLabel = isThinking ? "正在执行计划" : attachment ? "附件已准备" : "在线，可以开始";
@@ -603,11 +625,24 @@ export default function AgentChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, isThinking, plannerStep]);
 
+  useLayoutEffect(() => {
+    const input = composerInputRef.current;
+    if (!input) return;
+
+    input.style.height = "0px";
+    const contentHeight = input.scrollHeight;
+    const nextHeight = Math.min(Math.max(contentHeight, 30), 96);
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY = contentHeight > 96 ? "auto" : "hidden";
+    setComposerExpanded(draft.includes("\n") || nextHeight > 34);
+  }, [draft]);
+
   useEffect(() => {
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         setHistoryOpen(false);
         setPlannerOpen(false);
+        setCapabilityOpen(false);
       }
     };
     window.addEventListener("keydown", handleEscape);
@@ -629,17 +664,6 @@ export default function AgentChat() {
     plannerTimerRef.current = null;
   };
 
-  const resetConversation = () => {
-    clearRunningTimers();
-    setIsThinking(false);
-    setPlannerStep(0);
-    setMessages([]);
-    setDraft("");
-    setAttachment(null);
-    setHistoryOpen(false);
-    setHistory((items) => items.map((item) => ({ ...item, active: false })));
-  };
-
   const stopResponse = () => {
     clearRunningTimers();
     setIsThinking(false);
@@ -655,7 +679,8 @@ export default function AgentChat() {
   };
 
   const sendMessage = (preset) => {
-    const content = (typeof preset === "string" ? preset : draft).trim();
+    const typedContent = (typeof preset === "string" ? preset : draft).trim();
+    const content = typedContent || (attachment ? `请分析附件：${attachment}` : "");
     if (!content || isThinking) return;
 
     clearRunningTimers();
@@ -666,6 +691,7 @@ export default function AgentChat() {
     ]);
     setDraft("");
     setAttachment(null);
+    setVoiceActive(false);
     setPlannerStep(0);
     setIsThinking(true);
 
@@ -694,7 +720,7 @@ export default function AgentChat() {
   };
 
   const handleKeyDown = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       sendMessage();
     }
@@ -704,38 +730,6 @@ export default function AgentChat() {
     <main className={`chat-page${isThinking ? " is-working" : ""}`}>
       <div className="environment-image" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
-
-      <header className="chat-topbar">
-        <a className="chat-back-brand" href={`/?agent=${activeAgent.id}`} aria-label="返回智能体中枢门户">
-          <ArrowLeft size={18} weight="bold" aria-hidden="true" />
-          <BrandMark />
-          <span>
-            <strong>智能体中枢</strong>
-            <small>返回产品门户</small>
-          </span>
-        </a>
-        <div className="chat-topbar-title">
-          <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
-          <span>智能体对话</span>
-        </div>
-        <div className="chat-topbar-actions">
-          <button
-            className="chat-icon-button chat-mobile-history"
-            type="button"
-            aria-label="打开历史对话"
-            onClick={() => setHistoryOpen(true)}
-          >
-            <SidebarSimple size={18} />
-          </button>
-          <span className="chat-account" title="统一认证用户">
-            <UserCircle size={25} weight="duotone" />
-            <span>
-              <small>统一认证</small>
-              <strong>当前用户</strong>
-            </span>
-          </span>
-        </div>
-      </header>
 
       <div className="chat-workspace">
         <button
@@ -749,30 +743,61 @@ export default function AgentChat() {
         />
 
         <aside className={`chat-history${historyOpen ? " is-open" : ""}`} aria-label="历史对话">
-          <div className="chat-panel-heading">
-            <div>
-              <span>对话记录</span>
-              <strong>最近任务</strong>
-            </div>
-            <div className="chat-panel-actions">
-              <button
-                className="chat-history-new"
-                type="button"
-                aria-label="新建对话"
-                title="新建对话"
-                onClick={resetConversation}
-              >
-                <Plus size={17} weight="bold" />
-              </button>
-              <button
-                className="chat-panel-close"
-                type="button"
-                aria-label="关闭历史对话"
-                onClick={() => setHistoryOpen(false)}
-              >
-                <X size={17} />
-              </button>
-            </div>
+          <div className="chat-sidebar-home">
+            <a className="chat-home-link" href={`/?agent=${activeAgent.id}`} aria-label="返回智能体首页">
+              <span className="chat-home-arrow" aria-hidden="true">
+                <ArrowLeft size={16} weight="bold" />
+              </span>
+              <BrandMark />
+              <span className="chat-home-copy">
+                <strong>智能体首页</strong>
+                <small>返回门户</small>
+              </span>
+            </a>
+            <button
+              className="chat-panel-close"
+              type="button"
+              aria-label="关闭历史对话"
+              onClick={() => setHistoryOpen(false)}
+            >
+              <X size={17} />
+            </button>
+          </div>
+
+          <nav className="chat-sidebar-tools" aria-label="工作区入口">
+            <button className="is-featured" type="button" onClick={() => setCapabilityOpen(true)}>
+              <span className="chat-sidebar-tool-icon" aria-hidden="true">
+                <CirclesThreePlus size={18} weight="duotone" />
+              </span>
+              <span>
+                <strong>能力中心</strong>
+                <small>查看可调用能力</small>
+              </span>
+              <CaretRight size={15} weight="bold" aria-hidden="true" />
+            </button>
+            <button className="is-placeholder" type="button" disabled>
+              <span className="chat-sidebar-tool-icon" aria-hidden="true">
+                <StackSimple size={18} weight="duotone" />
+              </span>
+              <span>
+                <strong>任务模板</strong>
+                <small>位置预留</small>
+              </span>
+            </button>
+            <button className="is-placeholder" type="button" disabled>
+              <span className="chat-sidebar-tool-icon" aria-hidden="true">
+                <Books size={18} weight="duotone" />
+              </span>
+              <span>
+                <strong>知识资料</strong>
+                <small>位置预留</small>
+              </span>
+            </button>
+          </nav>
+
+          <div className="chat-history-heading">
+            <span>历史对话</span>
+            <small>{history.length} 项</small>
           </div>
           <label className="chat-history-search">
             <MagnifyingGlass size={16} aria-hidden="true" />
@@ -838,7 +863,7 @@ export default function AgentChat() {
         <section className="chat-main" aria-label="智能体对话内容">
           <header className="chat-agent-header">
             <div className="chat-agent-identity">
-              <AgentField activity={activity} step={plannerStep} />
+              <RobotAvatar activity={activity} />
               <div>
                 <h1>{activeAgent.name}</h1>
                 <div className={`chat-agent-status is-${activity}`} aria-live="polite">
@@ -854,9 +879,15 @@ export default function AgentChat() {
           </header>
 
           <div className={`chat-messages${messages.length ? " has-messages" : ""}`}>
+            <div className="chat-spatial-object" aria-hidden="true">
+              <span className="chat-spatial-aura" />
+              <React.Suspense fallback={<span className="chat-spatial-loading" />}>
+                <ParticleStage shape={activeAgent.shape} />
+              </React.Suspense>
+            </div>
             {!messages.length ? (
               <section className="chat-welcome" aria-labelledby="chat-welcome-title">
-                <AgentField activity={activity} hero step={plannerStep} />
+                <RobotAvatar activity={activity} hero />
                 <p className="chat-welcome-label">{activeAgent.role}</p>
                 <h2 id="chat-welcome-title">今天想完成什么？</h2>
                 <p>描述目标、资料和期望结果，我会组织合适的能力完成任务。</p>
@@ -900,52 +931,85 @@ export default function AgentChat() {
           </div>
 
           <footer className="chat-composer-shell">
-            {attachment ? (
-              <div className="chat-attachment-chip">
-                <FileText size={16} weight="duotone" />
-                <span>{attachment}</span>
-                <button type="button" aria-label={`移除 ${attachment}`} onClick={() => setAttachment(null)}>
-                  <X size={14} />
-                </button>
-              </div>
-            ) : null}
-            <div className="chat-composer">
+            <div
+              className={`chat-composer${composerExpanded ? " is-expanded" : ""}${
+                attachment ? " has-attachment" : ""
+              }`}
+            >
               <input
                 ref={fileInputRef}
                 className="chat-file-input"
                 type="file"
                 onChange={(event) => setAttachment(event.target.files?.[0]?.name || null)}
               />
-              <button
-                className="chat-composer-tool"
-                type="button"
-                aria-label="添加附件"
-                title="添加附件"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Paperclip size={19} />
-              </button>
-              <textarea
-                rows={1}
-                value={draft}
-                aria-label="输入你的问题"
-                placeholder="输入你的问题，按 Enter 发送"
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={handleKeyDown}
-              />
-              <button className="chat-composer-tool" type="button" aria-label="语音输入" title="语音输入待接入" disabled>
-                <Microphone size={19} />
-              </button>
-              <button
-                className={`chat-send-button${isThinking ? " is-stopping" : ""}`}
-                type="button"
-                disabled={!isThinking && !draft.trim()}
-                aria-label={isThinking ? "停止生成" : "发送消息"}
-                title={isThinking ? "停止生成" : "发送消息"}
-                onClick={isThinking ? stopResponse : () => sendMessage()}
-              >
-                {isThinking ? <StopCircle size={20} weight="fill" /> : <ArrowUp size={19} weight="bold" />}
-              </button>
+              {attachment ? (
+                <div className="chat-attachment-chip">
+                  <span className="chat-attachment-icon" aria-hidden="true">
+                    <FileText size={15} weight="duotone" />
+                  </span>
+                  <span>{attachment}</span>
+                  <button type="button" aria-label={`移除 ${attachment}`} onClick={() => setAttachment(null)}>
+                    <X size={13} />
+                  </button>
+                </div>
+              ) : null}
+              <div className="chat-composer-controls">
+                <button
+                  className={`chat-composer-tool is-add${attachment ? " is-active" : ""}`}
+                  type="button"
+                  aria-label="添加附件"
+                  title="添加附件"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Plus size={16} weight="bold" />
+                </button>
+                <textarea
+                  ref={composerInputRef}
+                  rows={1}
+                  value={draft}
+                  aria-label="输入你的问题"
+                  placeholder={voiceActive ? "正在聆听…" : "描述任务，或粘贴资料与链接…"}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+                <button
+                  className="chat-composer-route"
+                  type="button"
+                  aria-label="选择智能体能力"
+                  onClick={() => setCapabilityOpen(true)}
+                >
+                  自动路由
+                  <CaretDown size={11} weight="bold" aria-hidden="true" />
+                </button>
+                <button
+                  className={`chat-composer-tool is-voice${voiceActive ? " is-listening" : ""}`}
+                  type="button"
+                  aria-label={voiceActive ? "停止语音输入" : "开始语音输入"}
+                  aria-pressed={voiceActive}
+                  title="语音输入"
+                  onClick={() => setVoiceActive((current) => !current)}
+                >
+                  {voiceActive ? (
+                    <span className="chat-voice-wave" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  ) : (
+                    <Microphone size={16} weight="duotone" />
+                  )}
+                </button>
+                <button
+                  className={`chat-send-button${isThinking ? " is-stopping" : ""}`}
+                  type="button"
+                  disabled={!isThinking && !draft.trim() && !attachment}
+                  aria-label={isThinking ? "停止生成" : "发送消息"}
+                  title={isThinking ? "停止生成" : "发送消息"}
+                  onClick={isThinking ? stopResponse : () => sendMessage()}
+                >
+                  {isThinking ? <StopCircle size={16} weight="fill" /> : <ArrowUp size={15} weight="bold" />}
+                </button>
+              </div>
             </div>
             <p>回答内容由智能体生成，请结合业务规则核验。</p>
           </footer>
@@ -970,6 +1034,62 @@ export default function AgentChat() {
           activity={activity}
         />
       </div>
+
+      {capabilityOpen ? (
+        <div className="chat-capability-layer">
+          <button
+            className="chat-capability-backdrop"
+            type="button"
+            aria-label="关闭能力中心"
+            onClick={() => setCapabilityOpen(false)}
+          />
+          <section
+            className="chat-capability-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="capability-dialog-title"
+          >
+            <header>
+              <span className="chat-capability-emblem" aria-hidden="true">
+                <CirclesThreePlus size={22} weight="duotone" />
+              </span>
+              <div>
+                <span>当前智能体</span>
+                <h2 id="capability-dialog-title">能力中心</h2>
+              </div>
+              <button type="button" aria-label="关闭能力中心" onClick={() => setCapabilityOpen(false)}>
+                <X size={18} />
+              </button>
+            </header>
+            <div className="chat-capability-intro">
+              <p>{activeAgent.name}</p>
+              <span>以下能力会根据任务意图自动参与路由与编排。</span>
+            </div>
+            <div className="chat-capability-list">
+              {activeAgent.capabilities.map(([title, body], index) => (
+                <article key={title}>
+                  <span className="chat-capability-index">{String(index + 1).padStart(2, "0")}</span>
+                  <div>
+                    <strong>{title}</strong>
+                    <p>{body}</p>
+                  </div>
+                  <span className="chat-capability-status">
+                    <i aria-hidden="true" />
+                    可用
+                  </span>
+                </article>
+              ))}
+            </div>
+            <footer>
+              <span>直接在对话中描述目标，系统会自动选择并组合能力。</span>
+              <button type="button" onClick={() => setCapabilityOpen(false)}>
+                开始对话
+                <ArrowUp size={14} weight="bold" aria-hidden="true" />
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
