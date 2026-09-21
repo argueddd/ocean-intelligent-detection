@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
   BookOpenText,
   ChartBar,
+  ChatCircleDots,
   GitDiff,
   GlobeHemisphereWest,
   Graph,
@@ -26,6 +27,7 @@ import {
   UserCircle,
 } from "@phosphor-icons/react";
 import gsap from "gsap";
+import AgentChat from "./components/AgentChat";
 import { agents } from "./data/agents";
 
 const ParticleStage = lazy(() => import("./components/ParticleStage"));
@@ -130,7 +132,7 @@ function AuthControl({ auth, loginHref, onLogout }) {
   );
 }
 
-function App() {
+function HomePage() {
   const [activeIndex, setActiveIndex] = useState(getInitialAgent);
   const [stageStatus, setStageStatus] = useState("loading");
   const [auth, setAuth] = useState({
@@ -421,6 +423,13 @@ function App() {
                   <ArrowUpRight size={17} weight="bold" />
                 </span>
               </a>
+              <a
+                className="chat-preview-cta"
+                href={`/chat?agent=${encodeURIComponent(active.id)}`}
+              >
+                <ChatCircleDots size={18} weight="duotone" aria-hidden="true" />
+                <span>对话原型</span>
+              </a>
             </div>
           </div>
 
@@ -520,6 +529,10 @@ function App() {
       </section>
     </main>
   );
+}
+
+function App() {
+  return window.location.pathname.startsWith("/chat") ? <AgentChat /> : <HomePage />;
 }
 
 export default App;
