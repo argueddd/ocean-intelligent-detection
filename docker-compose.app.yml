@@ -1,0 +1,65 @@
+# rag-kb 应用栈：LightRAG 引擎 + 后端（适配层/dsh）+ 前端。
+# 启动：docker compose -f docker-compose.app.yml --env-file backend/.env up -d --build
+# 停止：docker compose -f docker-compose.app.yml --env-file backend/.env down
+# 说明：backend/.env 同时承担容器环境与卷路径插值；模型 key 等经 backend 服务注入。
+name: rag-kb
+
+services:
+  lightrag:
+    image: hkuds/lightrag:latest
+    container_name: lightrag-docker-0.6B
+    restart: unless-stopped
+    ports:
+      - "9623:9621" # 宿主机沿用 9623 习惯端口，容器内 9621
+    environment:
+      HOST: 0.0.0.0
+      PORT: 9621
+      WORKING_DIR: /app/data/rag_storage
+      INPUT_DIR: /app/data/inputs
+      PROMPT_DIR: /app/data/prompts
+      TIKTOKEN_CACHE_DIR: /app/data/tiktoken
+      NO_PROXY: "*"
+      no_proxy: "*"
+    volumes:
+      - ${KB_RAG_STORAGE}:/app/data/rag_storage
+      - ${KB_LIGHTRAG_INPUTS_DIR}:/app/data/inputs
+      # 引擎自身配置：模型 key 等在 .env 文件；prompts 为可自定义提示词目录（路径须在 backend/.env 配置，缺失启动即报错）
+      - ${LIGHTRAG_DOTENV:?请在 backend/.env 配置 LIGHTRAG_DOTENV（LightRAG 引擎 .env 文件路径）}:/app/.env
+      - ${LIGHTRAG_PROMPTS_DIR:?请在 backend/.env 配置 LIGHTRAG_PROMPTS_DIR（LightRAG prompts 目录）}:/app/data/prompts
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: rag-kb-backend
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    environment:
+      # 容器内路径覆盖 .env 的宿主机路径；引擎走 compose 网络服务名（内部端口 9621）
+      LIGHTRAG_BASE_URL: http://lightrag:9621
+      KB_RAG_STORAGE: /data/rag_storage
+      KB_LIGHTRAG_INPUTS_DIR: /data/inputs
+    ports:
+      - "3088:3088"
+    volumes:
+      - ${KB_RAG_STORAGE}:/data/rag_storage
+      - ${KB_LIGHTRAG_INPUTS_DIR}:/data/inputs
+      # 会话历史与审批附件跨镜像升级持久化
+      - rag-kb-sessions:/app/backend/dsh/home/sessions
+      - rag-kb-spool:/app/backend/.spool
+    depends_on:
+      - lightrag
+
+  frontend:
+    build: ./frontend
+    container_name: rag-kb-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80" # 浏览器访问 http://<host>:8080
+    depends_on:
+      - backend
+
+volumes:
+  rag-kb-sessions:
+  rag-kb-spool:

@@ -1,0 +1,18 @@
+{
+  "name": "dsh-profile-rag-kb",
+  "private": true,
+  "dependencies": {
+    "dsh-knowledge": "link:../../../dsh-knowledge",
+    "kb-approval-bridge": "link:../../../plugin-approval-bridge"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-sdk-app",
+        "dsh-knowledge",
+        "kb-approval-bridge"
+      ]
+    }
+  }
+}

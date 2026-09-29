@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
 
   homepagev2:
-    build: ./homepage
+    build: ./frontend
     image: homepagev2:latest
     container_name: homepagev2
     networks:
@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
 
   portal-auth:
-    build: ./portal-auth
+    build: ./backend/portal-auth
     image: portal-auth:latest
     container_name: portal-auth
     environment:
@@ -62,7 +62,7 @@ services:
     restart: unless-stopped
 
   cas:
-    build: ./cas-server
+    build: ./backend/cas-server
     image: cas-server:latest
     container_name: cas-server
     environment:

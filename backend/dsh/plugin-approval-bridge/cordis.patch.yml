@@ -1,0 +1,4 @@
+# kb-approval-bridge bundle patch：把桥接插件行插入 profile 层叠。
+- insert:
+    - id: kb-approval-bridge
+      name: 'kb-approval-bridge'

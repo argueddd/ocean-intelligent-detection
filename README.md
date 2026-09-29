@@ -1,16 +1,24 @@
-# 智能体产品门户
+# 知识库智能体（rag-kb）与产品门户
 
-蓝白视觉的九智能体产品门户，包含 Vite + React 前端、轻量门户认证适配和 Nginx 静态服务。
+基于 DeepSeek Harness SDK（npm 包 `@deepseek-ai/dsh-sdk-client`）的知识库智能体适配层，外加蓝白视觉的产品门户（Vite + React 前端、轻量门户认证适配和 Nginx 静态服务）。自包含仓库：不依赖 DeepSeek Harness 源码仓。
 
 ## 目录结构
 
 ```text
-agent_showcase_homepage/
-├── homepage/              # React 门户与首页 Nginx
-├── portal-auth/           # CAS 客户端与门户会话服务
-├── cas-server/            # 项目内置独立 CAS 认证中心（前后端一体，仅负责认证）
-├── nginx.conf             # 服务器总入口，TLS 与多应用路由
-└── docker-compose.yml     # 服务器总入口 Nginx
+rag-harness-sdk/
+├── backend/                    # 后端
+│   ├── index.js                #   适配层：浏览器 ↔ dsh 子进程桥（SSE 聊天/审批/kb REST，3088）
+│   ├── package.json            #   适配层依赖：@deepseek-ai/dsh-sdk-client（含版本 overrides）
+│   ├── cas-server/             #   独立 CAS 认证中心（前后端一体，仅负责认证）
+│   ├── portal-auth/            #   门户的 CAS 客户端与门户会话服务
+│   └── dsh/                    # dsh 运行时与插件
+│       ├── home/               #     DSH_HOME：settings、profiles/rag-kb、.env（模板 .env.example）
+│       ├── dsh-knowledge/      #     知识库插件（LightRAG 适配、/kb/* REST、kb_* 模型工具）
+│       └── plugin-approval-bridge/ # 审批桥接插件（/approvals/* HTTP 面）
+├── frontend/                   # 前端：React 门户与首页 Nginx
+├── gateway/                    # 网关 Nginx 路由
+├── nginx.conf                  # 服务器总入口，TLS 与多应用路由
+└── docker-compose.yml          # 服务器总入口 Nginx
 ```
 
 门户 SSO 由三部分组成（`docker-compose.gateway.yml` 统一编排）：
@@ -141,7 +149,7 @@ def parse_cas_xml(xml_text: str) -> dict:
     return {"success": True, "uid": attrs.get("uid", uid), "attributes": attrs}
 ```
 
-接入后，在门户 `homepage/.env` 中把该产品入口指向本系统 `/sso/login`，例如：
+接入后，在门户 `frontend/.env` 中把该产品入口指向本系统 `/sso/login`，例如：
 
 ```ini
 VITE_KEY_ACCOUNT_COMPARISON_URL=http://127.0.0.1:9100/vip_139/report/api/auth/sso/login
@@ -198,7 +206,7 @@ npm run dev -- --host 127.0.0.1 --port 4173
 http://127.0.0.1:9100/vip_139/report/api/auth/sso/login
 ```
 
-各产品入口通过 `homepage/.env` 中的 `VITE_*_URL` 配置。没有配置入口的产品
+各产品入口通过 `frontend/.env` 中的 `VITE_*_URL` 配置。没有配置入口的产品
 在登录后显示“应用接入中”，不会跳转到虚构地址。
 
 ## 自动化检查

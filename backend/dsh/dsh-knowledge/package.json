@@ -1,0 +1,24 @@
+{
+  "name": "dsh-knowledge",
+  "version": "0.2.0",
+  "description": "KnowledgeCore（知核）：基于 LightRAG 和 DeepSeek Harness 的反馈驱动知识库诊断与修复插件。",
+  "type": "module",
+  "main": "lib/index.js",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime"
+      ]
+    }
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  }
+}

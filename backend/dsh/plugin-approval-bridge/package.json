@@ -1,0 +1,17 @@
+{
+  "name": "kb-approval-bridge",
+  "version": "0.1.0",
+  "description": "把 harness 审批请求桥接到聊天界面：approval/request 瀑布监听器 + /approvals HTTP 面。",
+  "type": "module",
+  "main": "lib/index.js",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  }
+}
