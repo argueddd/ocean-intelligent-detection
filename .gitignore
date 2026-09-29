@@ -36,3 +36,6 @@ backend/dsh/home/pet.json
 backend/dsh/home/skin-center/
 backend/dsh/home/skin-center-active.json
 backend/dsh/home/task-board/
+
+# dsh 运行时生成，不入库
+backend/dsh/home/.anonymous-user-id
