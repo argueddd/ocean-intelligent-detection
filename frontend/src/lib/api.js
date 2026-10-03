@@ -3,7 +3,24 @@
  * 适配层地址走 vite 代理（/api → 127.0.0.1:3088）。
  */
 
-const SESSIONS_KEY = "rag-kb-sessions";
+// Keep this module importable by the offline SSE contracts outside Vite.
+export const IS_HARNESS_MODE = import.meta.env?.VITE_AGENT_MODE === "harness";
+const SESSIONS_KEY = IS_HARNESS_MODE ? "ocean-harness-sessions" : "rag-kb-sessions";
+
+export async function fetchArtifact(path, signal) {
+  const response = await fetch(`/api/artifacts?${new URLSearchParams({ path })}`, { signal });
+  const data = await response.json();
+  if (!response.ok || !data.ok) throw new Error(data.error || `无法打开产物（HTTP ${response.status}）`);
+  return data;
+}
+
+export async function fetchArtifactText(url, signal) {
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error(`无法读取内容（HTTP ${response.status}）`);
+  const text = await response.text();
+  if (text.length > 2 * 1024 * 1024) throw new Error("文件较大，请下载后查看。");
+  return text;
+}
 
 /** ---------------------------------------------------------------- 会话列表（localStorage） */
 
@@ -51,14 +68,42 @@ export function renameSession(fromId, toId) {
 
 /** ---------------------------------------------------------------- SSE 聊天 */
 
+export function createChatRequestId() {
+  return globalThis.crypto?.randomUUID?.() || "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const value = Math.floor(Math.random() * 16);
+    return (char === "x" ? value : (value & 3) | 8).toString(16);
+  });
+}
+
+export async function cancelChat({ requestId, sessionId }) {
+  const response = await fetch("/api/chat/cancel", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ requestId, ...(sessionId ? { sessionId } : {}) }),
+  });
+  let data;
+  try { data = await response.json(); } catch { /* Server may return a plain HTTP error. */ }
+  if (!response.ok || data?.ok !== true) throw new Error(data?.error || `取消未确认（HTTP ${response.status}）`);
+  return data;
+}
+
 /**
  * 发送一条消息并消费 SSE 流。
- * @param {object} opts - { sessionId?, message, attachments? }
- * @param {object} handlers - { onStart, onNotification, onRenamed, onDone, onError }
- * @returns {() => void} abort 函数（断开流；服务端回合继续但本端停止接收）。
+ * @param {object} opts - { requestId?, sessionId?, message, attachments? }
+ * @param {object} handlers - { onStart, onPhase, onNotification, onRenamed, onDone, onCancelled, onError }
+ * @returns {Function} 断开显示的函数；.cancel() 同时请求取消并等到服务端确认空闲。
  */
-export function streamChat({ sessionId, message, attachments }, handlers) {
+export function streamChat({ requestId = createChatRequestId(), sessionId, message, attachments }, handlers) {
   const controller = new AbortController();
+  let terminal = false;
+  let currentSessionId = sessionId;
+  let activeReader = null;
+  let cancellation = null;
+  const fail = (message) => {
+    if (terminal || controller.signal.aborted) return;
+    terminal = true;
+    handlers.onError?.(message);
+  };
 
   (async () => {
     let response
@@ -67,6 +112,7 @@ export function streamChat({ sessionId, message, attachments }, handlers) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          requestId,
           ...(sessionId ? { sessionId } : {}),
           message,
           ...(attachments && attachments.length ? { attachments } : {}),
@@ -74,7 +120,7 @@ export function streamChat({ sessionId, message, attachments }, handlers) {
         signal: controller.signal,
       });
     } catch (e) {
-      handlers.onError?.(e.name === "AbortError" ? "已停止接收" : "连接适配层失败：" + e.message);
+      fail("连接适配层失败：" + e.message);
       return;
     }
 
@@ -83,31 +129,47 @@ export function streamChat({ sessionId, message, attachments }, handlers) {
       try {
         detail = (await response.json())?.error || "";
       } catch { /* 非 JSON 响应 */ }
-      handlers.onError?.(detail || `请求失败（HTTP ${response.status}）`);
+      fail(detail || `请求失败（HTTP ${response.status}）`);
       return;
     }
 
     const reader = response.body.getReader();
+    activeReader = reader;
     const decoder = new TextDecoder();
     let buffer = "";
 
     const handleBlock = (block) => {
-      const lines = block.split("\n");
-      const eventLine = lines.find((l) => l.startsWith("event: "));
-      const dataLine = lines.find((l) => l.startsWith("data: "));
-      if (!eventLine || !dataLine) return;
-      const event = eventLine.slice(7).trim();
+      if (terminal || controller.signal.aborted) return;
+      const lines = block.split(/\r?\n/);
+      const eventLine = lines.find((l) => l.startsWith("event:"));
+      const dataLines = lines.filter((l) => l.startsWith("data:"));
+      if (!eventLine || !dataLines.length) return;
+      const event = eventLine.slice(6).trim();
       let data;
       try {
-        data = JSON.parse(dataLine.slice(6));
+        data = JSON.parse(dataLines.map((l) => l.slice(5).trimStart()).join("\n"));
       } catch {
         return;
       }
-      if (event === "start") handlers.onStart?.(data.sessionId);
+      if (event === "start") {
+        currentSessionId = data.sessionId;
+        handlers.onStart?.(data.sessionId);
+      }
+      else if (event === "phase") handlers.onPhase?.(data);
       else if (event === "notification") handlers.onNotification?.(data);
-      else if (event === "renamed") handlers.onRenamed?.(data);
-      else if (event === "done") handlers.onDone?.(data);
-      else if (event === "error") handlers.onError?.(data.message || "未知错误");
+      else if (event === "renamed") {
+        currentSessionId = data.to;
+        handlers.onRenamed?.(data);
+      }
+      else if (event === "done") {
+        terminal = true;
+        handlers.onDone?.(data);
+      }
+      else if (event === "cancelled") {
+        terminal = true;
+        handlers.onCancelled?.(data);
+      }
+      else if (event === "error") fail(data.message || "未知错误");
     };
 
     try {
@@ -115,19 +177,42 @@ export function streamChat({ sessionId, message, attachments }, handlers) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        let idx;
-        while ((idx = buffer.indexOf("\n\n")) >= 0) {
-          handleBlock(buffer.slice(0, idx).trim());
-          buffer = buffer.slice(idx + 2);
+        let separator;
+        while ((separator = /\r?\n\r?\n/.exec(buffer))) {
+          handleBlock(buffer.slice(0, separator.index).trim());
+          buffer = buffer.slice(separator.index + separator[0].length);
         }
+        if (terminal || controller.signal.aborted) break;
       }
+      buffer += decoder.decode();
       if (buffer.trim()) handleBlock(buffer.trim());
+      if (!terminal) fail("响应流已结束，但未收到完成状态；服务端可能仍在执行，请检查会话后再重试。");
     } catch (e) {
-      if (e.name !== "AbortError") handlers.onError?.("流中断：" + e.message);
+      fail("流中断：" + e.message);
+    } finally {
+      try { await reader.cancel(); } catch { /* 流已关闭 */ }
+      reader.releaseLock();
+      if (activeReader === reader) activeReader = null;
     }
   })();
 
-  return () => controller.abort();
+  const detach = () => {
+    terminal = true;
+    controller.abort();
+    activeReader?.cancel().catch(() => {});
+  };
+  detach.requestId = requestId;
+  detach.cancel = () => {
+    detach(); // Late SSE events must not change the UI while cancellation is pending.
+    if (!cancellation) {
+      cancellation = cancelChat({ requestId, sessionId: currentSessionId }).catch((error) => {
+        cancellation = null; // A failed cancellation can be retried with the same request token.
+        throw error;
+      });
+    }
+    return cancellation;
+  };
+  return detach;
 }
 
 /** ---------------------------------------------------------------- 审批与反馈（转发适配层） */
@@ -145,6 +230,7 @@ export async function fetchChatHistory(sessionId) {
 }
 
 export async function fetchPendingApprovals() {
+  if (IS_HARNESS_MODE) return [];
   const r = await fetch("/api/approvals/pending");
   if (!r.ok) return [];
   const data = await r.json();
@@ -152,6 +238,7 @@ export async function fetchPendingApprovals() {
 }
 
 export async function decideApproval(id, decision) {
+  if (IS_HARNESS_MODE) throw new Error("当前分析模式未启用知识库审批接口");
   const r = await fetch(`/api/approvals/${encodeURIComponent(id)}/decision`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -168,6 +255,7 @@ export async function decideApproval(id, decision) {
  * @param {object} body - { rating: 'up'|'down', query_id?, question?, answer?, note? }
  */
 export async function submitFeedback(body) {
+  if (IS_HARNESS_MODE) return { skipped: true };
   const rating = body.rating === "down" ? "negative" : "positive";
   const payload = {
     ...body,

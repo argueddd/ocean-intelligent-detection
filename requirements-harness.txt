@@ -1,0 +1,4 @@
+# Harness 的算法执行环境，Python >=3.11。SDK 主控仍使用 backend/package-lock.json 中的版本。
+numpy==2.3.5
+scipy==1.16.3
+matplotlib==3.10.8

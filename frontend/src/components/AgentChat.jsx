@@ -27,6 +27,7 @@ import {
   ThumbsUp,
   Trash,
   UserCircle,
+  WarningCircle,
   X,
 } from "@phosphor-icons/react";
 import assistantHead from "../assets/assistant-head.webp";
@@ -41,12 +42,28 @@ import {
   decideApproval,
   submitFeedback,
   renameSession,
+  IS_HARNESS_MODE,
 } from "../lib/api";
 import { Markdown } from "../lib/markdown";
+import { ArtifactProvider } from "./ArtifactPreview";
+import { groupToolSteps, parseToolArguments, toolLabel, toolProgress, toolResultDetail, toolResultState, toolStatusLabel } from "../lib/tool-progress";
+import { ATTACHMENT_ACCEPT, attachmentPayload, attachmentSizeLabel, clipboardImageFile, readChatAttachment } from "../lib/chat-attachments";
+import { canSendChat, interruptPendingSteps } from "../lib/chat-turn-state";
 
 const ParticleStage = React.lazy(() => import("./ParticleStage"));
 
-const kbAgent = agents[0];
+const activeAgent = IS_HARNESS_MODE ? {
+  name: "水下数据分析智能体",
+  short: "水下数据分析智能体",
+  role: "水声数据体检与分析",
+  shape: agents[0].shape,
+  capabilities: [
+    ["数据体检", "探查字段、样本轴与元数据，检查有限值、通道统计和实际覆盖范围。"],
+    ["Skill 调用", "根据任务选择已接入的 Skill，读取规则并执行其中的分析方法。"],
+    ["代码执行", "运行可复现的 Python 分析，保存参数、数值结果与图像证据。"],
+    ["视觉核验", "读取波形、PSD 与时频图，将可见图像特征与数值结果对照。"],
+  ],
+} : agents[0];
 
 /* ---------------------------------------------------------------- 工具链路辅助 */
 
@@ -70,18 +87,6 @@ function resultText(event) {
   return out.join("\n");
 }
 
-/** 时间线条目用的结果摘要：首段非空文本，截 64 字。 */
-function resultSummary(text, isError) {
-  const line =
-    String(text || "")
-      .split("\n")
-      .map((s) => s.trim())
-      .find(Boolean) || "";
-  const short = line.length > 64 ? `${line.slice(0, 63)}…` : line;
-  if (isError) return `失败${short ? `：${short}` : ""}`;
-  return short || "返回空结果";
-}
-
 /** 尝试把工具结果文本解析为 JSON（dsh-knowledge 工具结果多为 JSON）。 */
 function resultJsonOf(text) {
   try {
@@ -89,24 +94,6 @@ function resultJsonOf(text) {
   } catch {
     return null;
   }
-}
-
-/** 工具的中文名与图标语义。 */
-const TOOL_LABELS = {
-  lightrag_query_data: "知识检索",
-  kb_ingest: "文档入库",
-  kb_update: "知识更新",
-  kb_status: "健康状态",
-  kb_analyze: "知识库体检",
-  kb_report: "运营报告",
-  kb_graph_search: "图谱检索",
-  kb_feedback_inbox: "反馈收件箱",
-  kb_feedback_context: "反馈上下文",
-  kb_diagnosis_submit: "诊断提交",
-};
-
-function toolLabel(name) {
-  return TOOL_LABELS[name] || name;
 }
 
 /** 检索结果的引用文件列表（dedupe）。 */
@@ -273,20 +260,32 @@ function ThinkingCard({ message }) {
 
 /* ---------------------------------------------------------------- 工具卡 */
 
-function ToolCard({ card }) {
-  const [open, setOpen] = useState(false);
-  const label = toolLabel(card.name);
-  const running = card.status === "running";
+export function ToolDebugDetails({ card }) {
+  const args = parseToolArguments(card.args || card.argsText);
+  return <div className="chat-tool-body">
+    <p className="chat-tool-debug-label">工具：{card.name || "未知"}</p>
+    {args.command ? <><p className="chat-tool-debug-label">原始命令</p><pre className="chat-tool-io">{args.command}</pre></> : null}
+    {card.argsText ? args.command ? <details className="chat-tool-raw-arguments"><summary>查看全部输入参数</summary><pre className="chat-tool-io">{card.argsText}</pre></details>
+      : <><p className="chat-tool-debug-label">输入参数</p><pre className="chat-tool-io">{card.argsText}</pre></> : null}
+    {card.resultText ? <><p className="chat-tool-debug-label">返回结果</p><pre className="chat-tool-io">{card.resultText}</pre></> : null}
+  </div>;
+}
+
+export function ToolCard({ card, initialOpen = false }) {
+  const [open, setOpen] = useState(initialOpen);
+  const progress = toolProgress(card);
+  const running = ["running", "cancelling"].includes(card.status);
+  const incomplete = ["error", "partial", "interrupted", "stop-unconfirmed"].includes(card.status);
   const json = card.resultJson;
 
   return (
     <article className={`chat-tool-card is-${card.status}${open ? " is-open" : ""}`}>
-      <button className="chat-tool-head" type="button" onClick={() => setOpen((v) => !v)}>
+      <button className="chat-tool-head" type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
         <span className="chat-tool-spin" aria-hidden="true">
-          {running ? <React.Fragment><i /><i /><i /></React.Fragment> : <CheckCircle size={14} weight="fill" />}
+          {running ? <React.Fragment><i /><i /><i /></React.Fragment> : incomplete ? <WarningCircle size={15} weight="fill" /> : <CheckCircle size={14} weight="fill" />}
         </span>
-        <strong>{label}</strong>
-        <span className="chat-tool-brief">{toolBrief(card)}</span>
+        <span className="chat-tool-copy"><strong>{progress.title}</strong><small>{progress.label}</small></span>
+        <span className="chat-tool-state">{toolStatusLabel(card)}</span>
         <CaretDown size={13} weight="bold" aria-hidden="true" className={open ? "is-down" : ""} />
       </button>
 
@@ -326,35 +325,29 @@ function ToolCard({ card }) {
         </div>
       ) : null}
 
-      {open ? (
-        <div className="chat-tool-body">
-          {card.argsText ? <pre className="chat-tool-io">{card.argsText}</pre> : null}
-          {card.resultText ? <pre className="chat-tool-io">{card.resultText.slice(0, 2400)}</pre> : null}
-        </div>
-      ) : null}
+      {open ? <ToolDebugDetails card={card} /> : null}
 
-      {card.status === "error" && card.resultText ? (
-        <p className="chat-tool-error">{card.resultText.slice(0, 300)}</p>
-      ) : null}
+      {incomplete ? <p className={`chat-tool-notice is-${card.status}`}>{toolResultDetail(card.resultText, card.status, card.name)}</p> : null}
     </article>
   );
 }
 
-function toolBrief(card) {
-  const args = card.args || {};
-  if (card.name === "lightrag_query_data") return args.query ? String(args.query).slice(0, 26) : "检索知识库";
-  if (card.name === "kb_ingest") return args.kind === "file" ? `入库：${args.title || args.file_path || ""}`.slice(0, 30) : `入库：${args.title || "文本"}`;
-  if (card.name === "kb_update") return `更新：${args.action || ""}${args.entity_name ? " · " + args.entity_name : ""}`.slice(0, 30);
-  if (card.name === "kb_graph_search") return args.label || args.query || "图谱检索";
-  if (card.name === "kb_status") return "知识库健康";
-  if (card.name === "kb_analyze") return "健康分析";
-  if (card.name === "kb_report") return `近 ${args.days || 7} 天运营`;
-  return card.status === "running" ? "执行中…" : card.status === "error" ? "执行失败" : "已完成";
+export function ToolGroup({ group, initialOpen = false }) {
+  const [open, setOpen] = useState(initialOpen);
+  return <article className={`chat-tool-group${open ? " is-open" : ""}`}>
+    <button type="button" className="chat-tool-head" aria-expanded={open} onClick={() => setOpen(value => !value)}>
+      <span className="chat-tool-spin" aria-hidden="true"><StackSimple size={15} /></span>
+      <span className="chat-tool-copy"><strong>{group.progress.groupTitle}</strong><small>连续执行记录 · 保留每次详情</small></span>
+      <span className="chat-tool-state">{group.cards.length} 步</span>
+      <CaretDown size={13} weight="bold" aria-hidden="true" className={open ? "is-down" : ""} />
+    </button>
+    {open ? <div className="chat-tool-group-items">{group.cards.map(card => <ToolCard key={card.id} card={card} />)}</div> : null}
+  </article>;
 }
 
 /* ---------------------------------------------------------------- 审批卡 */
 
-function ApprovalCard({ card, onDecide }) {
+export function ApprovalCard({ card, onDecide }) {
   const [busy, setBusy] = useState(false);
   const decided = card.status !== "pending";
 
@@ -415,41 +408,11 @@ function RobotAvatar({ activity = "waiting", compact = false, hero = false }) {
   );
 }
 
-function AssistantMessage({ message, onFeedback, onGrow, pending = false, activityText = "" }) {
+export function AssistantMessage({ message, onFeedback, pending = false, activityText = "" }) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   const fullText = message.content || "";
-
-  /** 打字机渐显：新回答整段到达后逐字展开（历史/错误消息 instant 直出）。 */
-  const [shown, setShown] = useState(() => (message.instant ? fullText.length : 0));
-  const timerRef = useRef(null);
-  useEffect(() => {
-    if (message.instant || pending) return undefined;
-    let cancelled = false;
-    let current = 0;
-    const total = fullText.length;
-    const tick = () => {
-      if (cancelled) return;
-      current = Math.min(total, current + Math.max(2, Math.ceil((total - current) / 90)));
-      setShown(current);
-      if (current < total) {
-        timerRef.current = window.setTimeout(tick, 16);
-      }
-    };
-    timerRef.current = window.setTimeout(tick, 16);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timerRef.current);
-    };
-    // 仅挂载时启动一次：整条消息的 content 到达后不会再变。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => () => window.clearTimeout(timerRef.current), []);
-  const growing = shown < fullText.length;
-  useEffect(() => {
-    if (growing) onGrow?.();
-  }, [shown, growing, onGrow]);
 
   const copyAnswer = async () => {
     try {
@@ -464,7 +427,7 @@ function AssistantMessage({ message, onFeedback, onGrow, pending = false, activi
   const shareAnswer = async () => {
     try {
       if (navigator.share) {
-        await navigator.share({ title: "知识库助手回答", text: fullText });
+        await navigator.share({ title: `${activeAgent.short || "知识库助手"}回答`, text: fullText });
         return;
       }
       await navigator.clipboard?.writeText(fullText);
@@ -486,7 +449,7 @@ function AssistantMessage({ message, onFeedback, onGrow, pending = false, activi
       <RobotAvatar activity={pending ? "working" : "waiting"} compact />
       <div className="chat-message-stack">
         <div className="chat-message-meta">
-          <strong>知识库助手</strong>
+          <strong>{activeAgent.short || "知识库助手"}</strong>
           <time>{message.time}</time>
         </div>
         <div className="chat-assistant-content">
@@ -499,14 +462,14 @@ function AssistantMessage({ message, onFeedback, onGrow, pending = false, activi
               </span>
               <div>
                 <strong>{activityText || "正在思考"}</strong>
-                <span>检索证据与执行过程实时可见</span>
+                <span>{IS_HARNESS_MODE ? "数据分析与工具执行过程实时可见" : "检索证据与执行过程实时可见"}</span>
               </div>
             </div>
           ) : (
-            <Markdown className={growing ? "is-growing" : ""}>{fullText.slice(0, shown)}</Markdown>
+            <Markdown>{fullText}</Markdown>
           )}
         </div>
-        {!pending && fullText && !growing ? (
+        {!pending && fullText ? (
           <div className="chat-message-actions" aria-label="消息操作">
             <button
               type="button"
@@ -516,7 +479,7 @@ function AssistantMessage({ message, onFeedback, onGrow, pending = false, activi
             >
               <Copy size={15} />
             </button>
-            <button
+            {onFeedback ? <><button
               className={feedback === "up" ? "is-active" : ""}
               type="button"
               aria-label="回答有帮助"
@@ -535,7 +498,7 @@ function AssistantMessage({ message, onFeedback, onGrow, pending = false, activi
               onClick={() => rate("down")}
             >
               <ThumbsDown size={15} />
-            </button>
+            </button></> : null}
             <button type="button" aria-label="分享回答" title="分享回答" onClick={shareAnswer}>
               <ShareNetwork size={15} />
             </button>
@@ -546,7 +509,7 @@ function AssistantMessage({ message, onFeedback, onGrow, pending = false, activi
   );
 }
 
-function UserMessage({ message }) {
+export function UserMessage({ message }) {
   return (
     <article className="chat-message-row is-user">
       <div className="chat-message-stack">
@@ -555,12 +518,37 @@ function UserMessage({ message }) {
           <time>{message.time}</time>
         </div>
         <div className="chat-user-content">{message.content}</div>
+        {message.attachment?.kind === "image" && message.attachment.previewUrl ? (
+          <figure className="chat-user-image">
+            <img src={message.attachment.previewUrl} alt={`上传图片：${message.attachment.name}`} />
+            <figcaption>{message.attachment.name}</figcaption>
+          </figure>
+        ) : null}
       </div>
       <span className="chat-user-avatar" aria-hidden="true">
         <UserCircle size={26} weight="duotone" />
       </span>
     </article>
   );
+}
+
+export function AttachmentChip({ attachment, onRemove }) {
+  return <div className={`chat-attachment-chip${attachment.kind === "image" ? " is-image" : ""}`}>
+    {attachment.kind === "image" ? <img className="chat-attachment-preview" src={attachment.previewUrl} alt={`待发送图片：${attachment.name}`} /> :
+      <span className="chat-attachment-icon" aria-hidden="true"><FileText size={15} weight="duotone" /></span>}
+    <span className="chat-attachment-copy"><strong>{attachment.name}</strong><small>{attachment.kind === "image" ? "图片 · " : "附件 · "}{attachmentSizeLabel(attachment.size)}</small></span>
+    <button type="button" aria-label={`移除 ${attachment.name}`} onClick={onRemove}><X size={13} /></button>
+  </div>;
+}
+
+export function ChatSendButton({ isThinking, cancellationState, attachmentReading, hasContent, hasAttachment, onSend, onStop }) {
+  const label = cancellationState === "pending" ? "正在停止" : cancellationState === "failed" ? "重试停止" : isThinking ? "停止回答" : "发送消息";
+  const stopping = isThinking || cancellationState !== "idle";
+  const disabled = cancellationState === "pending" || (!stopping && !canSendChat({ attachmentReading, hasContent, hasAttachment }));
+  return <button className={`chat-send-button${stopping ? " is-stopping" : ""}`} type="button" disabled={disabled}
+    aria-label={label} title={label} onClick={stopping ? onStop : onSend}>
+    {stopping ? <StopCircle size={16} weight="fill" /> : <ArrowUp size={15} weight="bold" />}
+  </button>;
 }
 
 /* ---------------------------------------------------------------- 执行过程抽屉 */
@@ -593,9 +581,10 @@ function PlannerNatureGlyph({ type = "sprout" }) {
   );
 }
 
-function TimelineDrawer({ open, onClose, timeline, activity }) {
+export function TimelineDrawer({ open, onClose, timeline, activity }) {
   const finished = activity !== "working";
-  const progress = Math.min(95, timeline.length * 12);
+  const groups = groupToolSteps(timeline);
+  const problems = timeline.filter(item => ["error", "partial", "rejected", "interrupted"].includes(item.status) || item.kind === "error").length;
 
   return (
     <aside
@@ -623,33 +612,37 @@ function TimelineDrawer({ open, onClose, timeline, activity }) {
           <PlannerNatureGlyph type={finished ? "tree" : "sprout"} />
         </span>
         <div className="planner-overview-copy">
-          <span>{finished ? "本轮执行已完成" : "正在执行"}</span>
+          <span>{finished ? problems ? "执行已结束，包含未完成步骤" : "执行记录" : "任务进行中"}</span>
           <strong>{timeline.length ? `${timeline.length} 项操作` : "等待新任务"}</strong>
-          <div className="planner-progress" role="progressbar" aria-label="执行进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}>
-            <i style={{ width: `${progress}%` }} />
-          </div>
+          <p className="planner-status-counts">{problems ? `${problems} 项未完成或被拒绝` : finished ? "可展开查看执行依据与详情" : "步骤随实际工具调用更新"}</p>
         </div>
       </section>
 
       <ol className="chat-timeline" aria-label="执行时间线">
         {timeline.length ? (
-          timeline.map((item) => (
+          groups.map((item) => (
             <li key={item.id} className={`chat-timeline-item is-${item.kind} is-${item.status || "info"}`}>
               <span className="chat-timeline-dot" aria-hidden="true" />
               <div className="chat-timeline-body">
-                <strong>{item.title}</strong>
-                {item.detail ? <p className="chat-timeline-detail">{item.detail}</p> : null}
+                <strong>{item.role === "tool-group" ? item.progress.groupTitle : item.title}</strong>
+                {item.kind === "tool" ? <>
+                  <p className="chat-timeline-detail">{toolStatusLabel(item)}{item.detail ? ` · ${item.detail}` : ""}</p>
+                  <details className="chat-timeline-debug"><summary>查看执行详情</summary><ToolDebugDetails card={item} /></details>
+                </> : item.role === "tool-group" ? <>
+                  <p className="chat-timeline-detail">连续 {item.cards.length} 步 · 保留全部执行记录</p>
+                  <details className="chat-timeline-debug"><summary>查看每步详情</summary>{item.cards.map(step => <section key={step.id} className="chat-timeline-group-step"><strong>{step.title || toolProgress(step).title}</strong><p>{toolStatusLabel(step)} · {step.detail}</p><ToolDebugDetails card={step} /></section>)}</details>
+                </> : item.detail ? <p className="chat-timeline-detail">{item.detail}</p> : null}
               </div>
             </li>
           ))
         ) : (
-          <li className="chat-timeline-item is-empty">发送消息后，这里会实时展示工具调用与审批过程。</li>
+          <li className="chat-timeline-item is-empty">{IS_HARNESS_MODE ? "发送任务后，这里会实时展示 Skill、代码执行与视觉核验过程。" : "发送消息后，这里会实时展示工具调用与审批过程。"}</li>
         )}
       </ol>
 
       <footer className="planner-footer">
         <span className={`planner-live is-${activity}`} aria-hidden="true" />
-        <span>{finished ? "等待下一条消息" : "工具调用与审批实时同步"}</span>
+        <span>{finished ? "等待下一条消息" : IS_HARNESS_MODE ? "工具调用与执行结果实时同步" : "工具调用与审批实时同步"}</span>
       </footer>
     </aside>
   );
@@ -683,6 +676,10 @@ export default function AgentChat() {
   const [draft, setDraft] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
   const [attachment, setAttachment] = useState(null);
+  const [attachmentReading, setAttachmentReading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState("");
+  const [cancellationState, setCancellationState] = useState("idle");
+  const [cancellationError, setCancellationError] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [plannerOpen, setPlannerOpen] = useState(false);
@@ -698,11 +695,18 @@ export default function AgentChat() {
   const currentQueryIdRef = useRef(null);
   const currentUserTextRef = useRef(null);
   const sessionSeqRef = useRef(0);
+  const attachmentReadSeqRef = useRef(0);
+  const cancellationRef = useRef(null);
 
-  const activity = isThinking ? "working" : attachment ? "reading" : "waiting";
-  const activityLabel = isThinking ? activityText || "正在执行" : attachment ? "附件已准备" : "在线，可以开始";
+  const activity = isThinking || cancellationState === "pending" ? "working" : attachment || attachmentReading ? "reading" : "waiting";
+  const activityLabel = cancellationState === "pending" ? "正在停止本轮执行" : cancellationState === "failed" ? "停止尚未确认" : isThinking ? activityText || "正在执行" : attachmentReading ? "正在读取附件" : attachment ? "附件已准备" : "在线，可以开始";
 
-  const quickPrompts = [
+  const quickPrompts = IS_HARNESS_MODE ? [
+    "当前有哪些可用 Skills？分别能做什么？",
+    "探查 .run/try-data/array.h5，列出数据体检所需确认的信息。",
+    "检查 .run/try-data/unknown-fs.npy，不猜采样率，先做不依赖 Hz 的检查。",
+    "读取 .run/try-data/reference-results，用视觉工具核对分析图与数值结果。",
+  ] : [
     "知识库里有哪些关于报销的制度？",
     "做一次知识库体检，看看有什么问题",
     "知识库当前健康状态如何？",
@@ -713,6 +717,7 @@ export default function AgentChat() {
     const query = historyQuery.trim().toLowerCase();
     return query ? sessions.filter((item) => item.title.toLowerCase().includes(query)) : sessions;
   }, [sessions, historyQuery]);
+  const visibleMessages = groupToolSteps(messages);
 
   useLayoutEffect(() => {
     document.documentElement.classList.add("chat-view");
@@ -725,7 +730,7 @@ export default function AgentChat() {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = "知识库助手 | 对话工作台";
+    document.title = IS_HARNESS_MODE ? "水下数据分析智能体 | 对话工作台" : "知识库助手 | 对话工作台";
     return () => {
       document.title = previousTitle;
     };
@@ -734,11 +739,6 @@ export default function AgentChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, isThinking]);
-
-  /** 打字机展开期间的跟随滚动（auto 平滑无效化，避免高频 smooth 抖动）。 */
-  const scrollDuringTyping = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
-  }, []);
 
   useLayoutEffect(() => {
     const input = composerInputRef.current;
@@ -764,7 +764,11 @@ export default function AgentChat() {
     return () => window.removeEventListener("keydown", handleEscape);
   }, []);
 
-  useEffect(() => () => abortRef.current?.(), []);
+  useEffect(() => () => {
+    sessionSeqRef.current += 1;
+    attachmentReadSeqRef.current += 1;
+    abortRef.current?.cancel().catch(() => {});
+  }, []);
 
   const timelineIdRef = useRef(0);
   const timelineCallRef = useRef(new Map());
@@ -773,12 +777,13 @@ export default function AgentChat() {
   /** 追加一条过程项（tool/approval/error），返回条目 id 供后续更新状态。 */
   const pushTimelineItem = useCallback((item) => {
     const id = `tl-${++timelineIdRef.current}`;
-    setTimeline((items) => [...items.slice(-80), { id, time: clockTime(), ...item }]);
+    setTimeline((items) => [...items, { id, time: clockTime(), ...item }]);
     return id;
   }, []);
 
   /** 审批决定：用 callId 匹配审批桥的 pending 记录再提交。 */
   const handleDecide = useCallback(async (card, decision) => {
+    if (IS_HARNESS_MODE) return;
     const pending = await fetchPendingApprovals();
     const match =
       pending.find((p) => p.callId && card.callId && p.callId === card.callId) ||
@@ -798,6 +803,7 @@ export default function AgentChat() {
 
   /** 点赞/点踩：带本轮 query_id 落 feedback.jsonl。 */
   const handleFeedback = useCallback((message, rating) => {
+    if (IS_HARNESS_MODE) return;
     submitFeedback({
       rating,
       ...(message.queryId ? { query_id: message.queryId } : {}),
@@ -822,7 +828,7 @@ export default function AgentChat() {
     }
 
     if (event.type === "step/start") {
-      setActivityText("正在推理");
+      setActivityText("正在响应");
       return;
     }
 
@@ -863,10 +869,8 @@ export default function AgentChat() {
     }
 
     if (event.type === "tool/call") {
-      let args = {};
-      try {
-        args = JSON.parse(data.arguments || "{}");
-      } catch { /* 模型产生的 arguments 解析失败按空对象展示 */ }
+      const args = parseToolArguments(data.arguments);
+      const progress = toolProgress({ name: data.name, args });
       setMessages((items) => [
         ...items,
         {
@@ -880,15 +884,14 @@ export default function AgentChat() {
           time: clockTime(),
         },
       ]);
-      setActivityText(`正在调用 ${toolLabel(data.name)}`);
-      const argsDetail = args.query
-        ? String(args.query).slice(0, 32)
-        : args.action
-          ? String(args.action)
-          : "";
+      setActivityText(progress.activity);
       const tlId = pushTimelineItem({
         kind: "tool",
-        title: `${toolLabel(data.name)}${argsDetail ? `：${argsDetail}` : ""}`,
+        title: progress.title,
+        progress,
+        name: data.name,
+        args,
+        argsText: typeof data.arguments === "string" ? data.arguments : JSON.stringify(args),
         status: "running",
       });
       if (data.callId) timelineCallRef.current.set(data.callId, tlId);
@@ -905,7 +908,7 @@ export default function AgentChat() {
       setMessages((items) =>
         items.map((m) =>
           m.role === "tool" && (!callId || m.callId === callId) && m.status === "running"
-            ? { ...m, status: isError ? "error" : "done", resultText: text, resultJson: json }
+            ? { ...m, status: toolResultState(m, text, isError), resultText: text, resultJson: json }
             : m,
         ),
       );
@@ -913,7 +916,7 @@ export default function AgentChat() {
       if (tlId) {
         setTimeline((items) =>
           items.map((it) =>
-            it.id === tlId ? { ...it, status: isError ? "error" : "done", detail: resultSummary(text, isError) } : it,
+            it.id === tlId ? { ...it, status: toolResultState(it, text, isError), resultText: text, detail: toolResultDetail(text, toolResultState(it, text, isError), it.name) } : it,
           ),
         );
       }
@@ -989,46 +992,53 @@ export default function AgentChat() {
     setIsThinking(false);
     setActivityText("");
     abortRef.current = null;
+    cancellationRef.current = null;
+    setCancellationState("idle");
+    setCancellationError("");
     pendingUserTextRef.current = null;
     currentQueryIdRef.current = null;
   }, []);
 
   const sendMessage = (preset) => {
     const typedContent = (typeof preset === "string" ? preset : draft).trim();
-    if (!typedContent && !attachment) return;
-    if (isThinking) return;
+    if (abortRef.current || !canSendChat({ isThinking, cancellationState: cancellationRef.current?.state || cancellationState, attachmentReading, hasContent: Boolean(typedContent), hasAttachment: Boolean(attachment) })) return;
 
-    const content = typedContent || `请处理附件：${attachment.name}`;
+    const content = typedContent || (attachment.kind === "image" ? `请解读这张图片：${attachment.name}` : `请处理附件：${attachment.name}`);
     const timestamp = Date.now();
 
     currentUserTextRef.current = content;
     pendingUserTextRef.current = content;
     currentQueryIdRef.current = null;
-    sessionSeqRef.current += 1;
+    const turnSeq = ++sessionSeqRef.current;
+    const current = () => turnSeq === sessionSeqRef.current;
 
     setMessages((items) => [
       ...items,
-      { id: `user-${timestamp}`, role: "user", time: clockTime(), content },
+      { id: `user-${timestamp}`, role: "user", time: clockTime(), content,
+        ...(attachment ? { attachment: { name: attachment.name, kind: attachment.kind, previewUrl: attachment.previewUrl } } : {}) },
     ]);
     setDraft("");
     setAttachment(null);
+    setAttachmentError("");
     setIsThinking(true);
+    setActivityText(attachment?.kind === "image" ? "正在上传图片" : "正在响应");
     setTimeline([]);
     timelineCallRef.current.clear();
     timelineApprovalRef.current.clear();
 
-    const attachmentPayload = attachment
-      ? [{ name: attachment.name, data: attachment.data }]
-      : undefined;
-
     abortRef.current = streamChat(
-      { sessionId, message: content, attachments: attachmentPayload },
+      { sessionId, message: content, attachments: attachmentPayload(attachment) },
       {
         onStart: (id) => {
+          if (!current()) return;
           setSessionId(id);
           setSessions(upsertSession(id, content));
         },
+        onPhase: ({ message }) => {
+          if (current() && typeof message === "string") setActivityText(message);
+        },
         onRenamed: ({ from, to }) => {
+          if (!current()) return;
           setSessionId(to);
           setSessions(renameSession(from, to));
           setMessages((items) => [
@@ -1037,14 +1047,20 @@ export default function AgentChat() {
               id: `renamed-${to}`,
               role: "assistant",
               time: clockTime(),
-              content: "服务已重启，本会话已迁移到新会话继续。之前的上下文不会自动延续，如需引用请重新说明。",
+              content: "服务已重启，已迁移会话继续处理当前问题。",
             },
           ]);
         },
-        onNotification: handleNotification,
-        onDone: () => resetTurnState(),
-        onError: (message) => {
+        onNotification: (notification) => { if (current()) handleNotification(notification); },
+        onDone: () => { if (current()) resetTurnState(); },
+        onCancelled: () => {
+          if (!current()) return;
+          setMessages(items => [...interruptPendingSteps(items, "interrupted"), { id: `stopped-${timestamp}`, role: "assistant", time: clockTime(), content: "本轮执行已停止，可以在当前会话继续提问。", instant: true }]);
+          setTimeline(items => interruptPendingSteps(items, "interrupted"));
           resetTurnState();
+        },
+        onError: (message) => {
+          if (!current()) return;
           setMessages((items) => [
             ...items,
             {
@@ -1055,27 +1071,54 @@ export default function AgentChat() {
               instant: true,
             },
           ]);
+          // A broken stream can leave an SDK turn running. Wait for the same cancellation ACK.
+          cancelCurrentTurn({ silent: true });
         },
       },
     );
   };
 
-  const stopResponse = () => {
-    abortRef.current?.();
-    resetTurnState();
-    setMessages((items) => [
-      ...items,
-      {
-        id: `stopped-${Date.now()}`,
-        role: "assistant",
-        time: clockTime(),
-        content: "已停止接收本轮输出。服务端的执行会自然结束，你可以继续提问。",
-      },
-    ]);
+  const cancelCurrentTurn = async ({ silent = false } = {}) => {
+    const handle = abortRef.current;
+    if (!handle) return true;
+    if (cancellationRef.current?.state === "pending") return cancellationRef.current.promise;
+    const stopSeq = ++sessionSeqRef.current;
+    const state = { state: "pending", promise: null };
+    cancellationRef.current = state;
+    setIsThinking(false); // Remove the live answer immediately; the server lock remains until ACK.
+    setActivityText("");
+    setCancellationState("pending");
+    setCancellationError("");
+    setMessages((items) => interruptPendingSteps(items, "cancelling"));
+    setTimeline((items) => interruptPendingSteps(items, "cancelling"));
+    state.promise = handle.cancel().then((result) => {
+      if (stopSeq !== sessionSeqRef.current) return true;
+      if (result.sessionId) {
+        setSessionId(result.sessionId);
+        setSessions(upsertSession(result.sessionId, currentUserTextRef.current));
+      }
+      setMessages((items) => {
+        const stopped = interruptPendingSteps(items, "interrupted");
+        return silent ? stopped : [...stopped, { id: `stopped-${Date.now()}`, role: "assistant", time: clockTime(), content: "本轮执行已停止，可以在当前会话继续提问。", instant: true }];
+      });
+      setTimeline((items) => interruptPendingSteps(items, "interrupted"));
+      resetTurnState();
+      return true;
+    }).catch((error) => {
+      if (stopSeq !== sessionSeqRef.current) return false;
+      state.state = "failed";
+      setCancellationState("failed");
+      setCancellationError(error.message || "无法确认本轮执行已停止。");
+      setMessages(items => interruptPendingSteps(items, "stop-unconfirmed"));
+      setTimeline(items => interruptPendingSteps(items, "stop-unconfirmed"));
+      return false;
+    });
+    return state.promise;
   };
 
-  const startNewChat = () => {
-    stopResponseSilently();
+  const startNewChat = async () => {
+    if (!await stopResponseSilently()) return;
+    sessionSeqRef.current += 1;
     setSessionId(null);
     setMessages([]);
     setTimeline([]);
@@ -1084,18 +1127,17 @@ export default function AgentChat() {
     setHistoryOpen(false);
   };
 
-  const stopResponseSilently = () => {
-    abortRef.current?.();
-    resetTurnState();
-  };
+  const stopResponseSilently = () => cancelCurrentTurn({ silent: true });
 
   const resumeSession = async (item) => {
-    stopResponseSilently();
+    if (!await stopResponseSilently()) return;
+    const historySeq = ++sessionSeqRef.current;
     setSessionId(item.sessionId);
     setMessages([]);
     setTimeline([]);
     setHistoryOpen(false);
     const events = await fetchChatHistory(item.sessionId);
+    if (historySeq !== sessionSeqRef.current) return;
     if (!events.length) {
       setMessages([
         {
@@ -1110,8 +1152,7 @@ export default function AgentChat() {
     }
     const wallTime = (ms) =>
       new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(ms));
-    setMessages(
-      events.map((e) => {
+    const restoredMessages = events.map((e) => {
         const time = typeof e.time === "number" ? wallTime(e.time) : clockTime();
         switch (e.kind) {
           case "user":
@@ -1121,12 +1162,7 @@ export default function AgentChat() {
           case "thinking":
             return { id: `h-t-${e.seq}`, role: "thinking", time, content: e.text };
           case "tool": {
-            let args = {};
-            try {
-              args = JSON.parse(e.argsText || "{}");
-            } catch {
-              /* 历史 arguments 解析失败按空对象展示 */
-            }
+            const args = parseToolArguments(e.argsText);
             return {
               id: `h-tool-${e.seq}`,
               role: "tool",
@@ -1134,9 +1170,9 @@ export default function AgentChat() {
               name: e.name,
               args,
               argsText: e.argsText,
-              status: e.status || "done",
+              status: e.status === "running" ? "running" : toolResultState({ name: e.name, args, status: e.status }, e.resultText),
               resultText: e.resultText || "",
-              resultJson: null,
+              resultJson: resultJsonOf(e.resultText),
               time,
             };
           }
@@ -1156,8 +1192,20 @@ export default function AgentChat() {
           default:
             return null;
         }
-      }).filter(Boolean),
-    );
+      }).filter(Boolean);
+    setMessages(restoredMessages);
+    timelineCallRef.current.clear();
+    timelineApprovalRef.current.clear();
+    const restoredTimeline = restoredMessages.filter(message => ["tool", "approval"].includes(message.role)).map(message => {
+      const id = `h-tl-${message.id}`;
+      if (message.role === "approval") {
+        timelineApprovalRef.current.set(message.approvalKey, id);
+        return { ...message, id, kind: "approval", title: `${toolLabel(message.toolName)} 请求审批`, detail: message.reason };
+      }
+      timelineCallRef.current.set(message.callId, id);
+      return { ...message, id, kind: "tool", progress: toolProgress(message), title: toolProgress(message).title, detail: message.status === "running" ? "此步骤尚未收到完成记录。" : toolResultDetail(message.resultText, message.status, message.name) };
+    });
+    setTimeline(restoredTimeline);
   };
 
   const deleteSession = (item) => {
@@ -1172,15 +1220,44 @@ export default function AgentChat() {
     }
   };
 
-  const readAttachment = (file) => {
+  const removeAttachment = () => {
+    attachmentReadSeqRef.current += 1;
+    setAttachment(null);
+    setAttachmentReading(false);
+    setAttachmentError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const readAttachment = async (file) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setAttachment({ name: file.name, data: String(reader.result || "").split(",")[1] || "" });
-    reader.readAsDataURL(file);
+    const readSeq = ++attachmentReadSeqRef.current;
+    setAttachment(null);
+    setAttachmentError("");
+    setAttachmentReading(true);
+    try {
+      const next = await readChatAttachment(file);
+      if (readSeq === attachmentReadSeqRef.current) setAttachment(next);
+    } catch (error) {
+      if (readSeq === attachmentReadSeqRef.current) setAttachmentError(error.message);
+    } finally {
+      if (readSeq === attachmentReadSeqRef.current) setAttachmentReading(false);
+    }
+  };
+
+  const handleComposerPaste = (event) => {
+    try {
+      const image = clipboardImageFile(event.clipboardData);
+      if (!image) return; // Keep the browser's normal text paste, cursor and selection behavior.
+      event.preventDefault();
+      readAttachment(image);
+    } catch (error) {
+      event.preventDefault();
+      setAttachmentError(error.message || "无法读取粘贴的图片，请重试。");
+    }
   };
 
   return (
-    <main className={`chat-page${isThinking ? " is-working" : ""}`}>
+    <ArtifactProvider><main className={`chat-page${isThinking ? " is-working" : ""}`}>
       <div className="environment-image" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
 
@@ -1197,14 +1274,14 @@ export default function AgentChat() {
 
         <aside className={`chat-history${historyOpen ? " is-open" : ""}`} aria-label="历史对话">
           <div className="chat-sidebar-home">
-            <a className="chat-home-link" href="/" aria-label="返回知识库助手首页">
+            <a className="chat-home-link" href={IS_HARNESS_MODE ? "/chat" : "/"} aria-label={IS_HARNESS_MODE ? "水下数据分析工作台" : "返回知识库助手首页"}>
               <span className="chat-home-arrow" aria-hidden="true">
                 <ArrowLeft size={16} weight="bold" />
               </span>
               <BrandMark />
               <span className="chat-home-copy">
-                <strong>知识库助手</strong>
-                <small>返回门户</small>
+                <strong>{IS_HARNESS_MODE ? "水下数据分析" : "知识库助手"}</strong>
+                <small>{IS_HARNESS_MODE ? "分析工作台" : "返回门户"}</small>
               </span>
             </a>
             <button
@@ -1238,7 +1315,7 @@ export default function AgentChat() {
               </span>
               <CaretRight size={15} weight="bold" aria-hidden="true" />
             </button>
-            <button className="is-placeholder" type="button" disabled>
+            {!IS_HARNESS_MODE ? <button className="is-placeholder" type="button" disabled>
               <span className="chat-sidebar-tool-icon" aria-hidden="true">
                 <Books size={18} weight="duotone" />
               </span>
@@ -1246,7 +1323,7 @@ export default function AgentChat() {
                 <strong>知识资料</strong>
                 <small>在对话中上传</small>
               </span>
-            </button>
+            </button> : null}
           </nav>
 
           <div className="chat-history-heading">
@@ -1323,7 +1400,7 @@ export default function AgentChat() {
             <div className="chat-agent-identity">
               <RobotAvatar activity={activity} />
               <div>
-                <h1>{kbAgent.name}</h1>
+                <h1>{activeAgent.name}</h1>
                 <div className={`chat-agent-status is-${activity}`} aria-live="polite">
                   <span aria-hidden="true">
                     <i />
@@ -1348,15 +1425,15 @@ export default function AgentChat() {
             <div className="chat-spatial-object" aria-hidden="true">
               <span className="chat-spatial-aura" />
               <React.Suspense fallback={<span className="chat-spatial-loading" />}>
-                <ParticleStage shape={kbAgent.shape} />
+                <ParticleStage shape={activeAgent.shape} />
               </React.Suspense>
             </div>
             {!messages.length ? (
               <section className="chat-welcome" aria-labelledby="chat-welcome-title">
                 <RobotAvatar activity={activity} hero />
-                <p className="chat-welcome-label">{kbAgent.role}</p>
-                <h2 id="chat-welcome-title">今天想了解或整理什么？</h2>
-                <p>可以直接提问知识内容、上传文档入库、编辑知识图谱，或让我做一次知识库体检。</p>
+                <p className="chat-welcome-label">{activeAgent.role}</p>
+                <h2 id="chat-welcome-title">{IS_HARNESS_MODE ? "今天想分析哪份水声数据？" : "今天想了解或整理什么？"}</h2>
+                <p>{IS_HARNESS_MODE ? "上传数据或提供项目内路径，我会先确认数据特点，再调用 Skill、执行分析并核对结果。" : "可以直接提问知识内容、上传文档入库、编辑知识图谱，或让我做一次知识库体检。"}</p>
                 <div className="chat-starter-grid" aria-label="快捷提问">
                   {quickPrompts.map((prompt) => (
                     <button type="button" key={prompt} onClick={() => sendMessage(prompt)}>
@@ -1371,19 +1448,19 @@ export default function AgentChat() {
                 <div className="chat-date-separator">
                   <span>今天</span>
                 </div>
-                {messages.map((message) => {
+                {visibleMessages.map((message) => {
                   if (message.role === "user") return <UserMessage key={message.id} message={message} />;
                   if (message.role === "thinking") return <ThinkingCard key={message.id} message={message} />;
                   if (message.role === "tool") return <ToolCard key={message.id} card={message} />;
+                  if (message.role === "tool-group") return <ToolGroup key={message.id} group={message} />;
                   if (message.role === "approval") {
-                    return <ApprovalCard key={message.id} card={message} onDecide={handleDecide} />;
+                    return IS_HARNESS_MODE ? null : <ApprovalCard key={message.id} card={message} onDecide={handleDecide} />;
                   }
                   return (
                     <AssistantMessage
                       key={message.id}
                       message={message}
-                      onFeedback={handleFeedback}
-                      onGrow={scrollDuringTyping}
+                      onFeedback={IS_HARNESS_MODE ? undefined : handleFeedback}
                     />
                   );
                 })}
@@ -1405,25 +1482,25 @@ export default function AgentChat() {
                 ref={fileInputRef}
                 className="chat-file-input"
                 type="file"
-                onChange={(event) => readAttachment(event.target.files?.[0])}
+                accept={ATTACHMENT_ACCEPT}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = ""; // Selecting the same file after removal must fire change again.
+                  readAttachment(file);
+                }}
               />
-              {attachment ? (
-                <div className="chat-attachment-chip">
-                  <span className="chat-attachment-icon" aria-hidden="true">
-                    <FileText size={15} weight="duotone" />
-                  </span>
-                  <span>{attachment.name}</span>
-                  <button type="button" aria-label={`移除 ${attachment.name}`} onClick={() => setAttachment(null)}>
-                    <X size={13} />
-                  </button>
-                </div>
-              ) : null}
+              {attachment ? <AttachmentChip attachment={attachment} onRemove={removeAttachment} /> : null}
+              {attachmentReading ? <p className="chat-composer-notice" role="status">正在读取附件… <button type="button" onClick={removeAttachment}>取消</button></p> : null}
+              {attachmentError ? <p className="chat-composer-notice is-error" role="alert">{attachmentError}</p> : null}
+              {cancellationState !== "idle" ? <p className={`chat-composer-notice${cancellationState === "failed" ? " is-error" : ""}`} role={cancellationState === "failed" ? "alert" : "status"}>
+                {cancellationState === "pending" ? "正在停止本轮执行，确认后即可在当前会话继续。" : `${cancellationError} 请点击“重试停止”，确认前暂不能发送。`}
+              </p> : null}
               <div className="chat-composer-controls">
                 <button
                   className={`chat-composer-tool is-add${attachment ? " is-active" : ""}`}
                   type="button"
                   aria-label="添加附件"
-                  title="添加附件（在对话中入库）"
+                  title={IS_HARNESS_MODE ? "添加数据附件或分析图像" : "添加附件（在对话中入库）"}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Plus size={16} weight="bold" />
@@ -1433,23 +1510,16 @@ export default function AgentChat() {
                   rows={1}
                   value={draft}
                   aria-label="输入你的问题"
-                  placeholder="提问知识内容，或描述治理任务（上传/编辑/体检）…"
+                  placeholder={IS_HARNESS_MODE ? "输入问题，可直接粘贴截图或上传数据…" : "输入问题，可粘贴图片或上传附件…"}
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleKeyDown}
+                  onPaste={handleComposerPaste}
                 />
-                <button
-                  className={`chat-send-button${isThinking ? " is-stopping" : ""}`}
-                  type="button"
-                  disabled={!isThinking && !draft.trim() && !attachment}
-                  aria-label={isThinking ? "停止接收" : "发送消息"}
-                  title={isThinking ? "停止接收" : "发送消息"}
-                  onClick={isThinking ? stopResponse : () => sendMessage()}
-                >
-                  {isThinking ? <StopCircle size={16} weight="fill" /> : <ArrowUp size={15} weight="bold" />}
-                </button>
+                <ChatSendButton isThinking={isThinking} cancellationState={cancellationState} attachmentReading={attachmentReading}
+                  hasContent={Boolean(draft.trim())} hasAttachment={Boolean(attachment)} onSend={() => sendMessage()} onStop={() => cancelCurrentTurn()} />
               </div>
             </div>
-            <p>回答依据知识库证据生成；写操作都会先向你请求批准。</p>
+            <p>{IS_HARNESS_MODE ? "根据数据与执行证据回答；缺失或冲突的元数据会明确提示。" : "回答依据知识库证据生成；写操作都会先向你请求批准。"}</p>
           </footer>
         </section>
 
@@ -1500,11 +1570,11 @@ export default function AgentChat() {
               </button>
             </header>
             <div className="chat-capability-intro">
-              <p>{kbAgent.name}</p>
+              <p>{activeAgent.name}</p>
               <span>在对话里直接描述目标，我会选择合适的能力完成。</span>
             </div>
             <div className="chat-capability-list">
-              {kbAgent.capabilities.map(([title, body], index) => (
+              {activeAgent.capabilities.map(([title, body], index) => (
                 <article key={title}>
                   <span className="chat-capability-index">{String(index + 1).padStart(2, "0")}</span>
                   <div>
@@ -1519,7 +1589,7 @@ export default function AgentChat() {
               ))}
             </div>
             <footer>
-              <span>写操作（入库/替换/退役/图谱变更）都会先请求你的批准。</span>
+              <span>{IS_HARNESS_MODE ? "先确认输入与分析范围，再执行并保留结果证据。" : "写操作（入库/替换/退役/图谱变更）都会先请求你的批准。"}</span>
               <button type="button" onClick={() => setCapabilityOpen(false)}>
                 开始对话
                 <ArrowUp size={14} weight="bold" aria-hidden="true" />
@@ -1528,6 +1598,6 @@ export default function AgentChat() {
           </section>
         </div>
       ) : null}
-    </main>
+    </main></ArtifactProvider>
   );
 }

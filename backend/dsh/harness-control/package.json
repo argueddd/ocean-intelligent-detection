@@ -1,0 +1,14 @@
+{
+  "name": "ocean-harness-control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Authenticated loopback bridge for cancelling one live Harness session tree.",
+  "type": "module",
+  "main": "lib/index.js",
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  }
+}

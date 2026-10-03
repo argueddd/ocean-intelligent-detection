@@ -6,6 +6,7 @@
  * WAL 重启恢复（pending/issued/verifying/崩溃窗口 409 already contains）。
  */
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { makeStack, makeRunner, ok, eq, throws, sleep } from './harness.mjs'
 
@@ -183,6 +184,35 @@ await check('替换：先删旧（核验消失）→ 插新（内容寻址新 id
   ok(s.engine._state.docs.has(newDocId) && !s.engine._state.docs.has(d1), 'engine has only new doc')
 })
 
+await check('文件替换：multipart 上传只返回 track_id，后续从 track 找回新 doc_id', async () => {
+  const s = await makeStack()
+  const original = await s.engine.uploadFile('replace.md', Buffer.from('旧文件内容'))
+  s.engine.advanceTicks()
+  const oldId = original.documents[0].id
+  s.registry.ensureDoc({ docId: oldId, source: 'replace.md', title: '文件替换' })
+  s.registry.touchStatus(oldId, 'active')
+  const uploadFile = s.engine.uploadFile.bind(s.engine)
+  let uploads = 0
+  s.engine.uploadFile = async (...args) => {
+    uploads++
+    const result = await uploadFile(...args)
+    return { track_id: result.track_id }
+  }
+  const result = await s.kb.replaceFile({ docId: oldId, filename: 'replace.md', bytes: Buffer.from('新文件内容'), actor: 'test' })
+  for (let i = 0; i < 15; i++) {
+    await s.intents.tickNow()
+    s.engine.advanceTicks()
+    await sleep(20)
+    if (s.intents.get(result.intent_id).status === 'verified') break
+  }
+  const finished = s.intents.get(result.intent_id)
+  eq(finished.status, 'verified', JSON.stringify(finished))
+  eq(uploads, 1, '文件替换必须走 uploadFile')
+  ok(finished.docId && finished.docId !== oldId, '应从 track_status 获取新文档 id')
+  eq(s.registry.getDoc(finished.docId).status, 'active')
+  ok(!s.engine._state.docs.has(oldId), '旧文档已删除')
+})
+
 await check('替换：新文档处理失败 → 注册表回滚旧文档 active', async () => {
   const s = await makeStack()
   const r = await s.engine.insertText('旧内容', 'src:rf')
@@ -321,6 +351,71 @@ await check('stats/list：终态不入 pending 统计；list 按 status 过滤',
   eq(s.intents.list({ status: 'verified' }).length, 1)
   eq(s.intents.list({ status: 'verified' })[0].id, a.id, 'FIFO: first-created runs first')
   eq(s.intents.list({ status: 'pending' })[0].id, b.id)
+})
+
+await check('调度重叠：慢引擎调用期间再次 tick 不重复发出计算', async () => {
+  const s = await makeStack()
+  const insert = s.engine.insertText.bind(s.engine)
+  let release, entered
+  const gate = new Promise((resolve) => { release = resolve })
+  const started = new Promise((resolve) => { entered = resolve })
+  let calls = 0
+  s.engine.insertText = async (...args) => {
+    calls++
+    entered()
+    await gate
+    return insert(...args)
+  }
+  const it = s.intents.submitText({ text: '慢请求', source: 'text:slow' })
+  await s.intents.tickNow()
+  const issuing = s.intents.tickNow()
+  try {
+    await started
+    const overlapping = Promise.all([s.intents.tickNow(), s.intents.tickNow()])
+    await sleep(10)
+    release()
+    await overlapping
+    eq(calls, 1, 'one intent must issue only one engine request')
+  } finally {
+    release()
+    await issuing
+  }
+  eq(s.intents.get(it.id).status, 'issued')
+  s.engine.advanceTicks()
+  await s.intents.tickNow()
+  eq(s.intents.get(it.id).status, 'verified', 'tick guard must release after completion')
+})
+
+await check('4000 行压缩：保留全部非终态与最近 300 个终态，重启后索引一致', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kb-compact-'))
+  const intentDir = path.join(dir, 'intents')
+  fs.mkdirSync(intentDir)
+  const seed = Array.from({ length: 4000 }, (_, i) => ({
+    id: 'old-' + i, kind: 'ingest_text', status: 'verified', params: {},
+    createdAt: new Date(i * 1000).toISOString(), updatedAt: new Date(i * 1000).toISOString(),
+  }))
+  seed.push({ id: 'paused', kind: 'ingest_text', status: 'paused', params: {} })
+  fs.writeFileSync(path.join(intentDir, 'intents.jsonl'), seed.map((r) => JSON.stringify(r)).join('\n') + '\n')
+  const s = await makeStack({ dir })
+  const it = s.intents.submitText({ text: '触发压缩', source: 'text:compact' })
+  await s.intents.tickNow(); await s.intents.tickNow()
+  s.engine.advanceTicks()
+  await s.intents.tickNow()
+  eq(s.intents.get(it.id)?.status, 'verified', 'completed intent must survive compaction')
+  eq(s.intents.get('paused')?.status, 'paused', 'nonterminal intent must survive')
+  eq(s.intents.list().length, 301)
+  eq(s.intents.get('old-0'), null, 'old terminal record must be removed')
+  eq(s.intents.get('old-3999')?.status, 'verified')
+  eq(s.intents.stats().pendingTotal, 1)
+  ok(!('undefined' in s.intents.stats().byStatus), 'index must contain records, not id strings')
+  const reopened = await makeStack({ dir, engine: s.engine })
+  eq(reopened.intents.list().map((r) => r.id).sort().join(','), s.intents.list().map((r) => r.id).sort().join(','))
+  const next = reopened.intents.submitText({ text: '压缩后继续', source: 'text:after-compact' })
+  await reopened.intents.tickNow(); await reopened.intents.tickNow()
+  s.engine.advanceTicks()
+  await reopened.intents.tickNow()
+  eq(reopened.intents.get(next.id).status, 'verified')
+  fs.rmSync(dir, { recursive: true, force: true })
 })
 
 const failed = finish()

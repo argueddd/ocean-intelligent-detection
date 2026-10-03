@@ -66,10 +66,14 @@ export function createAppendLog(filePath, { compact = null } = {}) {
   let rows = []
   try {
     const raw = fs.readFileSync(filePath, 'utf8')
+    // 崩溃可能留下半行。保留原始内容，并隔开下一条记录；完整但缺换行的末行也保留。
+    if (raw && !raw.endsWith('\n')) fs.appendFileSync(filePath, '\n', 'utf8')
     rows = raw.split('\n').filter(Boolean)
       .map((l) => { try { return JSON.parse(l) } catch (e) { return null } })
       .filter(Boolean)
-  } catch (e) { /* 首次启动 */ }
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e
+  }
 
   function append(row) {
     fs.appendFileSync(filePath, JSON.stringify(row) + '\n', 'utf8')

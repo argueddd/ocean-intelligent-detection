@@ -84,5 +84,31 @@ await check('compact：同 key 末行生效 + dropPredicate 剔除', async () =>
   eq(log2.readAll().length, 2, 'file diverges from memory after compact')
 })
 
+await check('截断尾行：恢复后追加的新记录在再次重启后仍可读', async () => {
+  const p = path.join(tmp(), 'torn.jsonl')
+  fs.writeFileSync(p, '{"id":"first","text":"声学数据"}\n{"id":"partial"')
+  const log = createAppendLog(p)
+  eq(log.length, 1)
+  log.append({ id: 'next' })
+  const reopened = createAppendLog(p)
+  eq(reopened.length, 2, 'new record must not join the broken tail')
+  eq(reopened.readAll()[0].text, '声学数据')
+  eq(reopened.readAll()[1].id, 'next')
+})
+
+await check('完整尾行缺换行：保留原记录，后续追加可重载', async () => {
+  const p = path.join(tmp(), 'no-newline.jsonl')
+  fs.writeFileSync(p, '{"id":"first"}')
+  const log = createAppendLog(p)
+  log.append({ id: 'next' })
+  eq(createAppendLog(p).readAll().map((r) => r.id).join(','), 'first,next')
+})
+
+await check('日志读取失败：不把目录等 IO 错误当作空账本', async () => {
+  let error
+  try { createAppendLog(tmp()) } catch (e) { error = e }
+  ok(error && error.code === 'EISDIR', 'read failure must be reported')
+})
+
 const failed = finish()
 if (process.argv[1] && import.meta.url === (await import('node:url')).pathToFileURL(process.argv[1]).href) process.exit(failed ? 1 : 0)

@@ -77,12 +77,11 @@ export function apply(ctx) {
     logger('审批等待决定: ' + id + ' tool=' + req.toolName)
 
     entry.timer = setTimeout(() => {
-      if (pending.delete(id)) { logger('审批超时，交回默认链: ' + id); promise.resolve(undefined) }
+      if (settle(id, undefined)) logger('审批超时，交回默认链: ' + id)
     }, DECISION_TIMEOUT_MS())
-    entry.onAbort = () => {
-      if (pending.delete(id)) promise.resolve('cancelled')
-    }
+    entry.onAbort = () => settle(id, 'cancelled')
     req.signal?.addEventListener('abort', entry.onAbort, { once: true })
+    if (req.signal?.aborted) entry.onAbort()
 
     const outcome = await promise
     // 有决定 → 短路回答；超时（undefined）→ 委托后续 answerer（fail-closed）
@@ -137,11 +136,6 @@ export function apply(ctx) {
 
   ctx.effect(() => () => {
     // 插件卸载：所有未决定请求交回默认链，不留悬挂 promise
-    for (const id of [...pending.keys()]) {
-      const entry = pending.get(id)
-      pending.delete(id)
-      if (entry.timer) clearTimeout(entry.timer)
-      entry.settle(undefined)
-    }
+    for (const id of [...pending.keys()]) settle(id, undefined)
   })
 }

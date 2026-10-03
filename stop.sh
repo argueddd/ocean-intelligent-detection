@@ -5,7 +5,7 @@
 set -u
 RUN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.run"
 
-for name in web server; do
+for name in harness-web harness-server web server; do
   pidfile="$RUN_DIR/$name.pid"
   if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
     pid="$(cat "$pidfile")"
@@ -18,4 +18,4 @@ for name in web server; do
   fi
   rm -f "$pidfile"
 done
-echo "提示: LightRAG 引擎按需停止 → docker stop lightrag-docker-0.6B"
+echo "阿里云 LightRAG / MinerU 独立运行。"

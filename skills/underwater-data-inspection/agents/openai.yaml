@@ -1,0 +1,3 @@
+interface:
+  display_name: "水声数据读取与检查分析"
+  short_description: "读取水声数据、核查质量并开展基础分析，明确报告缺失、歧义与冲突"

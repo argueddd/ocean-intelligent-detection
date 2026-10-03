@@ -1,22 +1,50 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useArtifactPreview } from "./artifact-context";
+import { artifactFileUrl, resolveArtifactPath } from "./artifact-path";
 
-/**
- * 回答与卡片正文的 Markdown 渲染：GFM（表格/任务列表）+ 图片原样输出。
- * 图片 URL 由 dsh-knowledge 注入（http://127.0.0.1:3090/kb/image?...），浏览器直连子进程。
- * 表格外包横向滚动容器：单元格长文本按内容分配列宽，超出部分横向滚动，避免被压成一字一行的竖排。
- */
-export function Markdown({ children, className = "" }) {
+/** GFM answers and reports; local artifacts use previews while external/knowledge links stay intact. */
+export function Markdown({ children, className = "", baseDirectory = "" }) {
+  const openArtifact = useArtifactPreview();
+  const openLocal = (event, path) => {
+    if (!openArtifact || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    openArtifact(path);
+  };
   return (
     <div className={`chat-md${className ? ` ${className}` : ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        skipHtml
         components={{
-          table: (props) => (
+          table: ({ node, ...props }) => (
             <div className="md-table-wrap">
               <table {...props} />
             </div>
           ),
+          a: ({ node, href, children, ...props }) => {
+            const path = resolveArtifactPath(href, baseDirectory);
+            return path ? <a {...props} className="md-artifact-link" href={artifactFileUrl(path)}
+              data-artifact-path={path} onClick={(event) => openLocal(event, path)}>{children}</a>
+              : <a {...props} href={href}>{children}</a>;
+          },
+          img: ({ node, src, alt, ...props }) => {
+            const path = resolveArtifactPath(src, baseDirectory);
+            if (!path) return <img {...props} src={src} alt={alt || ""} />;
+            return <a className="md-artifact-image" href={artifactFileUrl(path)} data-artifact-path={path}
+              aria-label={`打开图片：${alt || path.split("/").pop()}`} onClick={(event) => openLocal(event, path)}>
+              <img {...props} src={artifactFileUrl(path)} alt={alt || "分析图片"} loading="lazy" />
+            </a>;
+          },
+          code: ({ node, className, children, ...props }) => {
+            const value = String(children);
+            // Fenced code carries a trailing newline; preserve it even when it contains a path.
+            // Only explicit workspace paths in inline code are legacy artifact links.
+            const path = !className && !value.includes("\n") ? resolveArtifactPath(value) : null;
+            const code = <code {...props} className={className}>{children}</code>;
+            return path ? <a className="md-artifact-link md-artifact-inline" href={artifactFileUrl(path)}
+              data-artifact-path={path} onClick={(event) => openLocal(event, path)}>{code}</a> : code;
+          },
         }}
       >
         {children || ""}
