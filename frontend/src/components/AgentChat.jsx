@@ -26,7 +26,7 @@ import {
   ThumbsDown,
   ThumbsUp,
   Trash,
-  UserCircle,
+  User,
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
@@ -516,7 +516,7 @@ export function UserMessage({ message }) {
         ) : null}
       </div>
       <span className="chat-user-avatar" aria-hidden="true">
-        <UserCircle size={26} weight="duotone" />
+        <User size={18} weight="bold" />
       </span>
     </article>
   );
