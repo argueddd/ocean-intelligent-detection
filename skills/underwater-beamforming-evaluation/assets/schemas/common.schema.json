@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-beamforming-evaluation:contracts:1.0.0",
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "file_reference": {
+      "type": "object",
+      "properties": {
+        "kind": {"const": "file"},
+        "path": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+        "sha256": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/sha256"},
+        "object_id": {
+          "anyOf": [
+            {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+            {"type": "null"}
+          ]
+        }
+      },
+      "required": ["kind", "path", "sha256", "object_id"],
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "properties": {
+        "path": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+        "message": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"}
+      },
+      "required": ["path", "message"],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "truth_status": {"enum": ["provided", "absent", "unknown"]},
+        "truth_scope": {
+          "anyOf": [
+            {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+            {"type": "null"}
+          ]
+        },
+        "baseline_status": {"enum": ["provided", "absent", "unknown"]},
+        "comparability": {"enum": ["confirmed", "not_confirmed", "unknown", "not_applicable"]},
+        "independence": {"enum": ["independent", "not_independent", "unknown", "not_applicable"]},
+        "notes": {
+          "type": "array",
+          "items": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"}
+        }
+      },
+      "required": ["truth_status", "truth_scope", "baseline_status", "comparability", "independence", "notes"],
+      "additionalProperties": false
+    },
+    "job": {
+      "type": "object",
+      "properties": {
+        "job_id": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+        "command": {
+          "enum": ["spectrum", "doa", "freq-bearing", "btr", "signal", "spectrum-output", "time-frequency", "compare"]
+        },
+        "subject": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+        "algorithm": {
+          "anyOf": [
+            {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+            {"type": "null"}
+          ]
+        },
+        "scenario": {
+          "anyOf": [
+            {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+            {"type": "null"}
+          ]
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/file_reference"},
+          "minProperties": 1
+        },
+        "provenance_refs": {
+          "type": "array",
+          "items": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/file_reference"},
+          "minItems": 1
+        },
+        "parameters": {"type": "object"},
+        "evidence": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/evidence"},
+        "limitations": {
+          "type": "array",
+          "items": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"}
+        }
+      },
+      "required": ["job_id", "command", "subject", "algorithm", "scenario", "inputs", "provenance_refs", "parameters", "evidence", "limitations"],
+      "additionalProperties": false
+    },
+    "output_plan": {
+      "type": "object",
+      "properties": {
+        "save_destination": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+        "save_job_results": {"const": true},
+        "save_metrics_csv": {"type": "boolean"},
+        "save_report": {"type": "boolean"}
+      },
+      "required": ["save_destination", "save_job_results", "save_metrics_csv", "save_report"],
+      "additionalProperties": false
+    },
+    "confirmation": {
+      "type": "object",
+      "properties": {
+        "status": {"enum": ["pending", "recorded"]},
+        "statement": {
+          "anyOf": [
+            {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+            {"type": "null"}
+          ]
+        }
+      },
+      "required": ["status", "statement"],
+      "additionalProperties": false
+    },
+    "artifact": {
+      "type": "object",
+      "properties": {
+        "role": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+        "path": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+        "sha256": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 0}
+      },
+      "required": ["role", "path", "sha256", "size_bytes"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "TrackingEvaluationRequest",
+  "document_status": "draft",
+  "payload": {
+    "evaluation_id": "replace-me",
+    "mode": "descriptive",
+    "primary": {
+      "directory": "/absolute/path/to/tracking-package",
+      "manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "baseline": null,
+    "truth": null,
+    "settings": {
+      "short_track_max_detections": 2,
+      "continuity_basis": "all_rows",
+      "truth_matching": null
+    },
+    "acceptance_checks": [],
+    "products": {
+      "save_matches": false,
+      "save_plots": false,
+      "plot_dpi": 150
+    },
+    "output_directory": "/absolute/path/to/new-evaluation-output"
+  },
+  "unresolved_items": [
+    "Replace all placeholder paths, identifiers, and hashes before execute."
+  ]
+}

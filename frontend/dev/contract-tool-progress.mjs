@@ -9,6 +9,11 @@ let checks = 0;
 function check(name, fn) { fn(); checks += 1; console.log(`PASS ${name}`); }
 const tool = (name, args, status = "done", id = "t1") => ({ role: "tool", kind: "tool", id, name, args, argsText: JSON.stringify(args), status });
 const inspect = ".venv/bin/python skills/underwater-data-inspection/scripts/inspect_data.py";
+const beamform = ".venv/bin/python skills/underwater-beamforming/scripts";
+const beamEvaluate = ".venv/bin/python skills/underwater-beamforming-evaluation/scripts";
+const evaluate = ".venv/bin/python skills/underwater-line-spectrum-evaluation/scripts";
+const track = ".venv/bin/python skills/underwater-line-spectrum-tracking/scripts";
+const trackEvaluate = ".venv/bin/python skills/underwater-line-spectrum-tracking-evaluation/scripts";
 
 check("native Chinese description supplies purpose and live activity", () => {
   const card = tool("bash", { command: `${inspect} run source.sio --config config.json`, description: "计算 PSD，观察能量集中在哪些频率" }, "running");
@@ -25,6 +30,200 @@ check("purpose alias and whitespace are plain text", () => {
 check("old English description uses conservative Chinese invocation category", () => {
   for (const [mode, title] of [["probe", "探查数据格式与存储结构"], ["run", "执行数据体检与分析流程"], ["execute", "执行已配置的数据处理流程"]]) {
     assert.equal(toolProgress(tool("bash", { command: `cd .run && ${inspect} ${mode} "中文 数据.sio"`, description: "Run inspection" })).title, title);
+  }
+});
+check("beamforming preflight and numerical execution have distinct purpose labels", () => {
+  for (const [script, mode, title] of [
+    ["preflight.py", "check", "检查波束方案与参数确认记录"],
+    ["preflight.py", "digests", "计算波束方案与参数组摘要"],
+    ["execute.py", "check", "检查波束计算参数与执行门禁"],
+    ["execute.py", "digest", "计算波束计算范围摘要"],
+    ["execute.py", "run", "按已确认方案计算波束与所选结果"],
+  ]) {
+    const progress = toolProgress(tool("bash", { command: `${beamform}/${script} ${mode} execution.json`, description: "Run beamforming" }));
+    assert.equal(progress.title, title);
+    assert.equal(progress.activity, `正在${title}`);
+    assert.equal(progress.source, "classification");
+    assert.equal(progress.groupKey, undefined);
+  }
+});
+check("inspection export, saved-beam plotting and bypass handoff do not imply beam calculation", () => {
+  for (const [script, modes] of [
+    ["inspection_handoff.py", { review: "查看已有体检结果与波束交接缺口", check: "检查波束输入导出参数与来源", digest: "计算波束输入导出范围摘要", prepare: "导出已确认的波束输入与待确认方案" }],
+    ["analyze_results.py", { check: "检查已保存波束与补图参数", digest: "计算波束补图范围摘要", run: "计算已选波束的谱与图" }],
+    ["bypass_handoff.py", { review: "查看单阵元或已有波束的交接信息", check: "检查单阵元或已有波束的交接参数", digest: "计算旁路交接范围摘要", prepare: "准备已选单阵元或波束的交接包", receive: "检查接收的单阵元或波束交接包" }],
+  ]) {
+    for (const [mode, title] of Object.entries(modes)) {
+      assert.equal(toolProgress(tool("bash", { command: `${beamform}/${script} ${mode} request.json` })).title, title);
+    }
+  }
+});
+check("beamforming labels preserve Chinese descriptions and Skill loading uses the right method", () => {
+  const progress = toolProgress(tool("bash", { command: `${beamform}/execute.py run execution.json`, description: "计算 CBF 波束，使用已确认方向对比阵列响应" }));
+  assert.equal(progress.title, "计算 CBF 波束，使用已确认方向对比阵列响应");
+  assert.equal(progress.source, "description");
+  assert.equal(toolProgress(tool("skill", { name: "underwater-beamforming" })).title, "加载波束形成与参数确认方法");
+  assert.equal(toolProgress(tool("skill", { skill_name: "underwater-beamforming" })).title, "加载波束形成与参数确认方法");
+});
+check("beamforming invocation supports quoted absolute paths, Python flags and script workdir", () => {
+  for (const args of [
+    { command: '/workspace/.venv/bin/python3.13 "/workspace/中文 数据/skills/underwater-beamforming/scripts/execute.py" run "配置 文件.json"' },
+    { command: "python3 -B -W error::RuntimeWarning -X dev skills/underwater-beamforming/scripts/execute.py run execution.json" },
+    { command: "python3 -- execute.py run execution.json", workdir: "/workspace/skills/underwater-beamforming/scripts" },
+    { command: "python3 scripts/execute.py run execution.json", workdir: "/workspace/skills/underwater-beamforming" },
+    { command: "PYTHONUNBUFFERED=1 python3 execute.py run execution.json", workdir: "/workspace/skills/underwater-beamforming/scripts" },
+  ]) assert.equal(toolProgress(tool("bash", args)).title, "按已确认方案计算波束与所选结果");
+});
+check("generic execute.py and beamforming names in text never acquire an algorithm action", () => {
+  for (const command of [
+    "python execute.py run execution.json", "python other-skill/scripts/execute.py run execution.json",
+    "python skills/underwater-beamforming-other/scripts/execute.py run execution.json",
+    `${beamform}/execute.py unknown execution.json`,
+    "cat skills/underwater-beamforming/scripts/execute.py",
+    "grep run skills/underwater-beamforming/scripts/execute.py",
+    `echo '${beamform}/execute.py run execution.json'`,
+    `python -c "print('${beamform}/execute.py run execution.json')"`,
+    "python -m skills/underwater-beamforming/scripts/execute.py run execution.json",
+    `python --help skills/underwater-beamforming/scripts/execute.py run execution.json`,
+    `python - <<'PY'\nprint('${beamform}/execute.py run execution.json')\nPY`,
+  ]) {
+    assert.doesNotMatch(toolProgress(tool("bash", { command })).title, /波束|计算范围摘要|执行门禁/);
+    assert.equal(toolResultState(tool("bash", { command }), "out\n[exit code: 2]"), "error");
+  }
+  // A blocked gate is not the inspection CLI's partial-analysis success.
+  assert.equal(toolResultState(tool("bash", { command: `${beamform}/execute.py check execution.json` }), "out\n[exit code: 2]"), "error");
+});
+check("beamforming evaluation separates request checks, evidence preflight and metric execution", () => {
+  for (const [command, title] of [
+    [`${beamEvaluate}/validate_contract.py request.json --expect EvaluationRequest`, "检查波束评价请求与字段约束"],
+    [`${beamEvaluate}/evaluation_runtime.py request.json --preflight-only`, "检查波束评价输入、摘要与证据边界"],
+    [`${beamEvaluate}/evaluation_runtime.py request.json --output-dir .run/beam-evaluation`, "计算已确认的波束评价指标"],
+    [`${beamEvaluate}/evaluation_runtime.py request.json --output-dir=.run/beam-evaluation`, "计算已确认的波束评价指标"],
+    [`${beamEvaluate}/beamforming_metrics.py spectrum power.npy --angles angles.npy`, "评价空间谱主瓣、旁瓣与峰结构"],
+    [`${beamEvaluate}/beamforming_metrics.py doa estimates.npy --truth truth.npy`, "评价方位估计误差与匹配结果"],
+    [`${beamEvaluate}/beamforming_metrics.py freq-bearing matrix.npy --freqs frequencies.npy --angles angles.npy`, "评价频率—方位响应结构"],
+    [`${beamEvaluate}/beamforming_metrics.py btr matrix.npy --times time.npy --angles angles.npy`, "评价波束方位随时间的稳定性"],
+    [`${beamEvaluate}/beamforming_metrics.py signal beam.npy --fs 2000`, "评价波束时域输出与参考关系"],
+    [`${beamEvaluate}/beamforming_metrics.py spectrum-output psd.npy --freqs frequencies.npy`, "评价波束输出频谱特征"],
+    [`${beamEvaluate}/beamforming_metrics.py time-frequency tf.npy --freqs frequencies.npy --target-band 100:130`, "评价波束时频输出特征"],
+    [`${beamEvaluate}/beamforming_metrics.py compare metrics.csv spec.csv`, "比较已确认可比的波束算法指标"],
+    [`${beamEvaluate}/beamforming_metrics.py plot-pareto --metrics metrics.csv --spec spec.csv`, "生成波束算法权衡关系图"],
+  ]) {
+    const progress = toolProgress(tool("bash", { command, description: "Evaluate beamforming outputs" }));
+    assert.equal(progress.title, title);
+    assert.equal(progress.activity, `正在${title}`);
+    assert.doesNotMatch(progress.title, /重新波束|自动选优|通过|合格/);
+  }
+});
+check("beamforming evaluation loading and descriptions preserve its distinct role", () => {
+  const described = toolProgress(tool("bash", { command: `${beamEvaluate}/evaluation_runtime.py request.json --preflight-only`, description: "核对空间谱来源与真值覆盖范围" }));
+  assert.equal(described.title, "核对空间谱来源与真值覆盖范围");
+  assert.equal(described.source, "description");
+  for (const args of [{ name: "underwater-beamforming-evaluation" }, { skill_name: "underwater-beamforming-evaluation" }])
+    assert.equal(toolProgress(tool("skill", args)).title, "加载波束结果评价与证据分析方法");
+  assert.equal(toolProgress(tool("skill", { name: "underwater-beamforming" })).title, "加载波束形成与参数确认方法");
+});
+check("beamforming evaluation names outside its Skill never imply metric execution", () => {
+  for (const command of [
+    "python evaluation_runtime.py request.json --preflight-only",
+    "python other-skill/scripts/beamforming_metrics.py spectrum power.npy",
+    "python skills/underwater-beamforming-evaluation-other/scripts/evaluation_runtime.py request.json --preflight-only",
+    "cat skills/underwater-beamforming-evaluation/scripts/evaluation_runtime.py",
+    `echo '${beamEvaluate}/evaluation_runtime.py request.json --preflight-only'`,
+    `python -c "print('${beamEvaluate}/beamforming_metrics.py spectrum power.npy')"`,
+  ]) assert.doesNotMatch(toolProgress(tool("bash", { command })).title, /波束评价|空间谱主瓣|方位估计误差/);
+});
+check("line-spectrum evaluation distinguishes document checks, evidence preflight and metric execution", () => {
+  for (const [command, title] of [
+    [`${evaluate}/validate_contract.py request.json --kind EvaluationRequest`, "检查线谱评价文档字段与局部一致性"],
+    [`${evaluate}/validate_contract.py coverage.json --kind TruthCoverage`, "检查线谱评价文档字段与局部一致性"],
+    [`${evaluate}/validate_truth_labels.py labels.json`, "检查线谱真值标签格式"],
+    [`${evaluate}/evaluation_runtime.py request.json --preflight-only`, "检查线谱评价输入与跨文档证据"],
+    [`${evaluate}/evaluation_runtime.py request.json --output-dir .run/evaluation`, "计算已确认的线谱评价指标"],
+    [`${evaluate}/evaluation_runtime.py request.json --output-dir=.run/evaluation`, "计算已确认的线谱评价指标"],
+  ]) {
+    const progress = toolProgress(tool("bash", { command, description: "Evaluate candidates" }));
+    assert.equal(progress.title, title);
+    assert.equal(progress.activity, `正在${title}`);
+    assert.equal(progress.groupKey, undefined);
+    assert.doesNotMatch(progress.title, /执行检测|重新检测|CFAR|通过|合格/);
+  }
+});
+check("line-spectrum evaluation descriptions remain primary and loading does not imply detection", () => {
+  const progress = toolProgress(tool("bash", { command: `${evaluate}/evaluation_runtime.py request.json --output-dir .run/evaluation`, description: "统计已选结果的帧均候选数，包含零候选帧" }));
+  assert.equal(progress.title, "统计已选结果的帧均候选数，包含零候选帧");
+  assert.equal(progress.source, "description");
+  for (const args of [{ name: "underwater-line-spectrum-evaluation" }, { skill_name: "underwater-line-spectrum-evaluation" }])
+    assert.equal(toolProgress(tool("skill", args)).title, "加载线谱结果评价与证据检查方法");
+  assert.equal(toolProgress(tool("skill", { name: "underwater-line-spectrum-detection" })).title, "加载任务所需的处理方法");
+});
+check("evaluation invocation resolves quoted paths and workdirs without confusing CLI flags", () => {
+  for (const args of [
+    { command: 'python3 -B "/workspace/中文 数据/skills/underwater-line-spectrum-evaluation/scripts/evaluation_runtime.py" "评价 请求.json" --preflight-only' },
+    { command: "python3 -I -B evaluation_runtime.py request.json --preflight-only", workdir: "/workspace/skills/underwater-line-spectrum-evaluation/scripts" },
+    { command: "python3 -- scripts/evaluation_runtime.py request.json --preflight-only", workdir: "/workspace/skills/underwater-line-spectrum-evaluation" },
+    { command: "python3 skills/underwater-line-spectrum-evaluation/scripts/../scripts/evaluation_runtime.py request.json --preflight-only" },
+    { command: `${evaluate}/evaluation_runtime.py request.json --output-dir .run/evaluation --preflight-only` },
+  ]) assert.equal(toolProgress(tool("bash", args)).title, "检查线谱评价输入与跨文档证据");
+  for (const command of [`${evaluate}/evaluation_runtime.py request.json`, `${evaluate}/evaluation_runtime.py request.json -- --preflight-only`, `${evaluate}/evaluation_runtime.py --help`])
+    assert.equal(toolProgress(tool("bash", { command })).title, "运行代码");
+});
+check("evaluation script names outside the Skill or mentioned as data never imply evaluation", () => {
+  for (const command of [
+    "python evaluation_runtime.py request.json --preflight-only",
+    "python other-skill/scripts/validate_contract.py request.json",
+    "python skills/underwater-line-spectrum-detection/scripts/evaluation_runtime.py request.json --preflight-only",
+    "python skills/underwater-line-spectrum-evaluation-other/scripts/evaluation_runtime.py request.json --preflight-only",
+    "python skills/underwater-line-spectrum-evaluation/scripts/../../other-skill/scripts/evaluation_runtime.py request.json --preflight-only",
+    "cat skills/underwater-line-spectrum-evaluation/scripts/evaluation_runtime.py",
+    "grep preflight-only skills/underwater-line-spectrum-evaluation/scripts/evaluation_runtime.py",
+    `echo '${evaluate}/evaluation_runtime.py request.json --preflight-only'`,
+    `python -c "print('${evaluate}/evaluation_runtime.py request.json --preflight-only')"`,
+    `python -cprint('test') skills/underwater-line-spectrum-evaluation/scripts/evaluation_runtime.py request.json --preflight-only`,
+    "python -m skills/underwater-line-spectrum-evaluation/scripts/evaluation_runtime.py request.json --preflight-only",
+    "python --version skills/underwater-line-spectrum-evaluation/scripts/evaluation_runtime.py request.json --preflight-only",
+    `python - <<'PY'\nprint('${evaluate}/evaluation_runtime.py request.json --preflight-only')\nPY`,
+  ]) assert.doesNotMatch(toolProgress(tool("bash", { command })).title, /线谱|真值标签|跨文档/);
+});
+check("line-spectrum tracking shows contract review and confirmed association as separate steps", () => {
+  for (const [command, title] of [
+    [`${track}/validate_contract.py request /absolute/request.json`, "检查线谱跟踪请求、交接与结果契约"],
+    [`${track}/validate_contract.py handoff /absolute/handoff.json`, "检查线谱跟踪请求、交接与结果契约"],
+    [`${track}/tracking_runtime.py review /absolute/request.json`, "核对逐窗候选、帧账本与跟踪参数"],
+    [`${track}/tracking_runtime.py execute /absolute/request.json --review-sha256 abc`, "按已确认门限关联线谱频率轨迹"],
+  ]) {
+    const progress = toolProgress(tool("bash", { command, description: "Run tracking" }));
+    assert.equal(progress.title, title);
+    assert.equal(progress.activity, `正在${title}`);
+    assert.doesNotMatch(progress.title, /重新检测|目标识别|评价通过/);
+  }
+  for (const args of [{ name: "underwater-line-spectrum-tracking" }, { skill_name: "underwater-line-spectrum-tracking" }])
+    assert.equal(toolProgress(tool("skill", args)).title, "加载线谱候选轨迹关联方法");
+});
+check("line-spectrum tracking evaluation keeps review, execution and loading distinct", () => {
+  for (const [command, title] of [
+    [`${trackEvaluate}/validate_contract.py request /absolute/request.json`, "检查线谱轨迹评价请求与证据契约"],
+    [`${trackEvaluate}/validate_contract.py truth /absolute/truth.json`, "检查线谱轨迹评价请求与证据契约"],
+    [`${trackEvaluate}/evaluation_runtime.py review /absolute/request.json`, "核对轨迹包、真值范围与评价条件"],
+    [`${trackEvaluate}/evaluation_runtime.py execute /absolute/request.json --review-sha256 abc`, "计算已确认的线谱轨迹评价指标"],
+  ]) assert.equal(toolProgress(tool("bash", { command })).title, title);
+  for (const args of [{ name: "underwater-line-spectrum-tracking-evaluation" }, { skill_name: "underwater-line-spectrum-tracking-evaluation" }])
+    assert.equal(toolProgress(tool("skill", args)).title, "加载线谱轨迹评价与证据分析方法");
+  assert.equal(toolProgress(tool("skill", { name: "underwater-line-spectrum-tracking" })).title, "加载线谱候选轨迹关联方法");
+});
+check("tracking script names outside exact Skill paths never imply tracking or evaluation", () => {
+  for (const command of [
+    "python tracking_runtime.py review request.json",
+    "python other-skill/scripts/tracking_runtime.py execute request.json --review-sha256 abc",
+    "python skills/underwater-line-spectrum-tracking-other/scripts/tracking_runtime.py review request.json",
+    "cat skills/underwater-line-spectrum-tracking/scripts/tracking_runtime.py",
+    `echo '${trackEvaluate}/evaluation_runtime.py review request.json'`,
+    `python -c "print('${track}/tracking_runtime.py execute request.json')"`,
+  ]) assert.doesNotMatch(toolProgress(tool("bash", { command })).title, /轨迹关联|逐窗候选|轨迹评价|轨迹包/);
+});
+check("failed evaluation checks preserve failure instead of claiming partial inspection success", () => {
+  for (const script of ["validate_contract.py", "validate_truth_labels.py", "evaluation_runtime.py"]) {
+    for (const code of [1, 2]) assert.equal(toolResultState(tool("bash", { command: `${evaluate}/${script} request.json --preflight-only` }), `out\n[exit code: ${code}]`), "error");
   }
 });
 check("script names in read/grep/echo/Python string/heredoc never imply execution", () => {

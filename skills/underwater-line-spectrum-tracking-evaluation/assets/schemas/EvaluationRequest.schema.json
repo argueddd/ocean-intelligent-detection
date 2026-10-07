@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-line-spectrum-tracking-evaluation:request:1.0.0",
+  "title": "TrackingEvaluationRequest 1.0.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "record_type": {"const": "TrackingEvaluationRequest"},
+    "document_status": {"enum": ["draft", "specified"]},
+    "payload": {"$ref": "#/$defs/payload"},
+    "unresolved_items": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    }
+  },
+  "required": ["schema_version", "record_type", "document_status", "payload", "unresolved_items"],
+  "additionalProperties": false,
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "package_ref": {
+      "type": "object",
+      "properties": {
+        "directory": {"type": "string", "minLength": 1},
+        "manifest_sha256": {"$ref": "#/$defs/hash"}
+      },
+      "required": ["directory", "manifest_sha256"],
+      "additionalProperties": false
+    },
+    "truth_ref": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/hash"}
+      },
+      "required": ["path", "sha256"],
+      "additionalProperties": false
+    },
+    "truth_matching": {
+      "type": "object",
+      "properties": {
+        "assignment_method": {"const": "per_row_maximum_cardinality_minimum_frequency_error"},
+        "tie_break": {"const": "estimated_track_id_then_truth_track_id"},
+        "frequency_tolerance_hz": {"type": "number", "exclusiveMinimum": 0},
+        "minimum_matched_points": {"type": "integer", "minimum": 1},
+        "minimum_truth_track_recall": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "required": ["assignment_method", "tie_break", "frequency_tolerance_hz", "minimum_matched_points", "minimum_truth_track_recall"],
+      "additionalProperties": false
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "short_track_max_detections": {"type": "integer", "minimum": 1},
+        "continuity_basis": {"enum": ["all_rows", "tested_rows"]},
+        "truth_matching": {
+          "anyOf": [
+            {"$ref": "#/$defs/truth_matching"},
+            {"type": "null"}
+          ]
+        }
+      },
+      "required": ["short_track_max_detections", "continuity_basis", "truth_matching"],
+      "additionalProperties": false
+    },
+    "check": {
+      "type": "object",
+      "properties": {
+        "check_id": {"type": "string", "minLength": 1},
+        "metric": {"type": "string", "minLength": 1},
+        "operator": {"enum": ["<=", "<", ">=", ">", "=="]},
+        "threshold": {"type": "number"},
+        "source": {"type": "string", "minLength": 1}
+      },
+      "required": ["check_id", "metric", "operator", "threshold", "source"],
+      "additionalProperties": false
+    },
+    "products": {
+      "type": "object",
+      "properties": {
+        "save_matches": {"type": "boolean"},
+        "save_plots": {"type": "boolean"},
+        "plot_dpi": {"type": "integer", "minimum": 72, "maximum": 600}
+      },
+      "required": ["save_matches", "save_plots", "plot_dpi"],
+      "additionalProperties": false
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "evaluation_id": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["descriptive", "truth", "comparison", "truth_comparison"]},
+        "primary": {"$ref": "#/$defs/package_ref"},
+        "baseline": {"anyOf": [{"$ref": "#/$defs/package_ref"}, {"type": "null"}]},
+        "truth": {"anyOf": [{"$ref": "#/$defs/truth_ref"}, {"type": "null"}]},
+        "settings": {"$ref": "#/$defs/settings"},
+        "acceptance_checks": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/check"}
+        },
+        "products": {"$ref": "#/$defs/products"},
+        "output_directory": {"type": "string", "minLength": 1}
+      },
+      "required": ["evaluation_id", "mode", "primary", "baseline", "truth", "settings", "acceptance_checks", "products", "output_directory"],
+      "additionalProperties": false
+    }
+  }
+}

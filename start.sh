@@ -24,6 +24,9 @@ case "$MODE" in
   *) echo "用法: ./start.sh [--harness]"; exit 1 ;;
 esac
 WEB_URL=http://127.0.0.1:5173
+# 本机健康检查、前端代理和取消桥始终直连；外部模型保留现有代理设置。
+export NO_PROXY="${NO_PROXY:+$NO_PROXY,}localhost,127.0.0.1,::1"
+export no_proxy="${no_proxy:+$no_proxy,}localhost,127.0.0.1,::1"
 
 NODE_BIN="${NODE_BIN:-$(command -v node)}"
 if ! "$NODE_BIN" -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=19)?0:1)' 2>/dev/null; then
@@ -34,6 +37,27 @@ if ! "$NODE_BIN" -e 'const [a,b]=process.versions.node.split(".").map(Number);pr
 fi
 export PATH="$(dirname "$NODE_BIN"):$PATH"
 
+[ -f "$HERE/backend/.env" ] || { echo "❌ 缺少 backend/.env，请先执行: cp backend/.env.example backend/.env"; exit 1; }
+
+if [ "$MODE" = --harness ]; then
+  if ! "$NODE_BIN" - "$HERE/backend/.env" <<'NODE'
+const file = process.argv[2]
+try { process.loadEnvFile(file) } catch { process.exit(2) }
+const invalid = (name) => {
+  const value = String(process.env[name] || '').trim()
+  return !value || /^(replace-with|your-)/i.test(value) || /your-workspace|你的/i.test(value)
+}
+const missing = ['LLM_BASE_URL', 'LLM_API_KEY', 'LLM_MODEL'].filter(invalid)
+if (missing.length) {
+  console.error(`❌ backend/.env 仍需填写: ${missing.join(', ')}`)
+  process.exit(1)
+}
+NODE
+  then
+    exit 1
+  fi
+fi
+
 # 首次运行准备：适配层依赖 + profile 插件链接（幂等）
 if [ ! -d "$HERE/backend/node_modules/@deepseek-ai/dsh-sdk-client" ]; then
   echo "▶️  安装适配层依赖 (npm ci) ..."
@@ -42,7 +66,6 @@ fi
 if [ ! -d "$HERE/frontend/node_modules/vite" ]; then
   (cd "$HERE/frontend" && npm ci --no-fund --no-audit) || exit 1
 fi
-[ -f "$HERE/backend/.env" ] || { echo "❌ 缺少 backend/.env，请复制 backend/.env.example 并填写配置"; exit 1; }
 if [ "$MODE" = --harness ]; then
   "$HERE/setup-python.sh" --ensure || exit 1
 fi
@@ -74,7 +97,7 @@ if [ "$MODE" = --harness ]; then
   start_one "$SERVER_NAME" "$API_URL" "$HERE/backend" env DSH_PROFILE=harness PORT=3089 DSH_HOME_DIR=.runtime/web-harness-home "$NODE_BIN" index.js
   start_one "$WEB_NAME" "$WEB_URL" "$HERE/frontend" env VITE_AGENT_MODE=harness VITE_RAG_SERVER_TARGET=http://127.0.0.1:3089 "$NODE_BIN" "$HERE/frontend/node_modules/vite/bin/vite.js" --host 127.0.0.1 --port 5173 --strictPort
 else
-  start_one "$SERVER_NAME" "$API_URL" "$HERE/backend" "$NODE_BIN" index.js
+  start_one "$SERVER_NAME" "$API_URL" "$HERE/backend" env DSH_PROFILE=rag-kb PORT=3088 DSH_HOME_DIR=.runtime/dsh-home "$NODE_BIN" index.js
   start_one "$WEB_NAME" "$WEB_URL" "$HERE/frontend" "$NODE_BIN" "$HERE/frontend/node_modules/vite/bin/vite.js" --host 127.0.0.1 --port 5173 --strictPort
 fi
 

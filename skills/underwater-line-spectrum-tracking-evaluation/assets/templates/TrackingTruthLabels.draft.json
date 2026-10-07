@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "TrackingTruthLabels",
+  "label_status": "partial_positive",
+  "source": {
+    "detection_run_id": "replace-me",
+    "detection_task_id": "replace-me",
+    "candidate_table_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "ledger_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "time_reference": "replace-me"
+  },
+  "label_scope": {
+    "row_ranges": [[0, 1]],
+    "frequency_range_hz": [0.0, 1.0],
+    "truth_tracks_complete": false,
+    "negative_labels_complete": false
+  },
+  "truth_tracks": [
+    {
+      "truth_track_id": "truth_001",
+      "points": [{"row": 0, "time_seconds": 0.0, "frequency_hz": 0.5}]
+    }
+  ],
+  "provenance": {
+    "description": "Replace with label-generation evidence.",
+    "version": "draft",
+    "created_by": "replace-me"
+  },
+  "limitations": ["Draft only; not executable evidence."]
+}

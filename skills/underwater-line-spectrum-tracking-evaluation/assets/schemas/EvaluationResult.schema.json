@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-line-spectrum-tracking-evaluation:result:1.0.0",
+  "title": "TrackingEvaluationResult 1.0.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "record_type": {"const": "TrackingEvaluationResult"},
+    "status": {"const": "completed"},
+    "evaluation_id": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["descriptive", "truth", "comparison", "truth_comparison"]},
+    "evidence_level": {"enum": ["descriptive_only", "partial_truth", "complete_truth"]},
+    "source_identity": {"type": "object"},
+    "settings": {"type": "object"},
+    "metrics": {"type": "object"},
+    "comparison": {"anyOf": [{"type": "object"}, {"type": "null"}]},
+    "acceptance": {"$ref": "#/$defs/acceptance"},
+    "findings": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+    "semantic_boundary": {"$ref": "#/$defs/boundary"},
+    "validation": {"type": "object"}
+  },
+  "required": ["schema_version", "record_type", "status", "evaluation_id", "mode", "evidence_level", "source_identity", "settings", "metrics", "comparison", "acceptance", "findings", "limitations", "semantic_boundary", "validation"],
+  "additionalProperties": false,
+  "$defs": {
+    "acceptance": {
+      "type": "object",
+      "properties": {
+        "aggregate_status": {"enum": ["not_requested", "failed", "insufficient_evidence", "passed"]},
+        "checks": {"type": "array", "items": {"type": "object"}}
+      },
+      "required": ["aggregate_status", "checks"],
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "properties": {
+        "detection_recomputed": {"const": false},
+        "tracking_recomputed": {"const": false},
+        "tracking_evaluated": {"const": true},
+        "parameters_tuned": {"const": false},
+        "harmonic_grouping_performed": {"const": false},
+        "source_association_performed": {"const": false},
+        "target_identification_performed": {"const": false}
+      },
+      "required": ["detection_recomputed", "tracking_recomputed", "tracking_evaluated", "parameters_tuned", "harmonic_grouping_performed", "source_association_performed", "target_identification_performed"],
+      "additionalProperties": false
+    }
+  }
+}

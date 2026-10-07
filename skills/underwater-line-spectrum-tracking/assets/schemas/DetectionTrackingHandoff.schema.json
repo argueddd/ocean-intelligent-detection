@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-line-spectrum:tracking-handoff:1.0.0",
+  "title": "DetectionTrackingHandoff 1.0.0 input snapshot",
+  "type": "object",
+  "properties": {
+    "handoff_version": {"const": "1.0.0"},
+    "record_type": {"const": "DetectionTrackingHandoff"},
+    "status": {"const": "ready"},
+    "source_package": {
+      "type": "object",
+      "properties": {
+        "directory": {"type": "string", "minLength": 1},
+        "manifest_sha256": {"$ref": "#/$defs/hash"},
+        "manifest_size_bytes": {"type": "integer", "minimum": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "package_status": {"enum": ["completed", "partial"]}
+      },
+      "required": ["directory", "manifest_sha256", "manifest_size_bytes", "run_id", "package_status"],
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "properties": {
+        "task_id": {"type": "string", "minLength": 1},
+        "task_kind": {"const": "framewise"},
+        "input_ref": {"type": "object"},
+        "detector": {"type": "object"}
+      },
+      "required": ["task_id", "task_kind", "input_ref", "detector"],
+      "additionalProperties": false
+    },
+    "signal": {
+      "type": "object",
+      "properties": {
+        "sample_rate_hz": {"type": "number", "exclusiveMinimum": 0},
+        "time_mapping": {"type": "object"},
+        "beam_source": {"type": "object"},
+        "units": {"type": "object"},
+        "validity": {"type": "object"}
+      },
+      "required": ["sample_rate_hz", "time_mapping", "beam_source", "units", "validity"],
+      "additionalProperties": false
+    },
+    "analysis_grid": {
+      "type": "object",
+      "properties": {
+        "window_length_samples": {"type": "integer", "minimum": 2},
+        "hop_length_samples": {"type": "integer", "minimum": 1},
+        "nfft": {"type": "integer", "minimum": 2},
+        "window": {"enum": ["rectangular", "periodic_hann"]},
+        "demean": {"type": "boolean"},
+        "frame_origin": {"enum": ["each_interval_start", "signal_sample_zero"]},
+        "frequency_grid_definition": {"type": "string", "minLength": 1},
+        "frequency_spacing_hz": {"type": "number", "exclusiveMinimum": 0},
+        "nyquist_hz": {"type": "number", "exclusiveMinimum": 0},
+        "time_reference": {"type": "string", "minLength": 1}
+      },
+      "required": ["window_length_samples", "hop_length_samples", "nfft", "window", "demean",
+        "frame_origin", "frequency_grid_definition", "frequency_spacing_hz", "nyquist_hz", "time_reference"],
+      "additionalProperties": false
+    },
+    "scope": {"type": "object"},
+    "coverage": {"type": "object"},
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "detection_result": {"$ref": "#/$defs/file"},
+        "resolved_configuration": {"$ref": "#/$defs/file"},
+        "candidate_product_manifest": {"$ref": "#/$defs/file"},
+        "candidate_table": {"$ref": "#/$defs/file"},
+        "ledger_product_manifest": {"$ref": "#/$defs/file"},
+        "ledger": {"$ref": "#/$defs/file"}
+      },
+      "required": ["detection_result", "resolved_configuration", "candidate_product_manifest",
+        "candidate_table", "ledger_product_manifest", "ledger"],
+      "additionalProperties": false
+    },
+    "completeness": {
+      "type": "object",
+      "properties": {
+        "candidate_table_complete": {"const": true},
+        "candidate_count": {"type": "integer", "minimum": 0},
+        "frame_ledger_complete": {"const": true},
+        "complete_frame_count": {"type": "integer", "minimum": 1},
+        "detection_row_count": {"type": "integer", "minimum": 1},
+        "zero_candidate_rows_included": {"const": true},
+        "zero_candidate_row_count": {"type": "integer", "minimum": 0},
+        "invalid_or_skipped_frames_preserved": {"const": true},
+        "invalid_or_skipped_frame_count": {"type": "integer", "minimum": 0},
+        "candidate_output_truncated": {"const": false}
+      },
+      "required": ["candidate_table_complete", "candidate_count", "frame_ledger_complete",
+        "complete_frame_count", "detection_row_count", "zero_candidate_rows_included",
+        "zero_candidate_row_count", "invalid_or_skipped_frames_preserved",
+        "invalid_or_skipped_frame_count", "candidate_output_truncated"],
+      "additionalProperties": false
+    },
+    "semantic_boundary": {
+      "type": "object",
+      "properties": {
+        "detection_completed": {"const": true},
+        "tracking_performed": {"const": false},
+        "harmonic_grouping_performed": {"const": false},
+        "source_association_performed": {"const": false},
+        "target_identification_performed": {"const": false},
+        "evaluation_performed": {"const": false},
+        "association_record_semantics": {"const": "provenance_only_not_physical_target_association"}
+      },
+      "required": ["detection_completed", "tracking_performed", "harmonic_grouping_performed",
+        "source_association_performed", "target_identification_performed", "evaluation_performed",
+        "association_record_semantics"],
+      "additionalProperties": false
+    },
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}
+  },
+  "required": ["handoff_version", "record_type", "status", "source_package", "task", "signal",
+    "analysis_grid", "scope", "coverage", "evidence", "completeness", "semantic_boundary", "limitations"],
+  "additionalProperties": false,
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "file": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/hash"},
+        "size_bytes": {"type": "integer", "minimum": 1}
+      },
+      "required": ["path", "sha256", "size_bytes"],
+      "additionalProperties": false
+    }
+  }
+}

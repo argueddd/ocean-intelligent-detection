@@ -14,6 +14,7 @@ const suites = [
   ['dev/contract-harness.mjs', []],
   ['dev/contract-model-options.mjs', []],
   ['dev/contract-skills.mjs', []],
+  ['dev/contract-harness-skill-router.mjs', []],
   ['dev/contract-execution.mjs', []],
   ['dev/contract-bootstrap.py', ['-I'], process.env.PYTHON_TEST_BIN || 'python3'],
   ['dev/contract-underwater-sandbox.mjs', []],

@@ -1,0 +1,21 @@
+{
+  "execution_version": "0.4",
+  "plan": null,
+  "numerics": {
+    "reader": "npy_real_2d",
+    "compute_precision": "float64",
+    "source_sha256": null,
+    "direction_mapping": "look_vector_cos_sin_v1",
+    "direction_basis": null,
+    "stft_profile": "unscaled_rfft_wola_v1",
+    "edge_bins": null,
+    "covariance_schedule": null,
+    "max_delay_to_window_ratio": null,
+    "response_tolerance": null,
+    "coverage_tolerance": null,
+    "max_working_bytes": null,
+    "max_artifact_bytes": null
+  },
+  "approval": null,
+  "analysis": null
+}

@@ -1,0 +1,5 @@
+# 波束结果数值评价、图表与本地契约校验；Harness 自动安装到项目虚拟环境。
+numpy>=2.2,<3
+matplotlib>=3.10,<4
+jsonschema>=4.18,<5
+referencing>=0.30,<1

@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "TrackingRequest",
+  "document_status": "draft",
+  "payload": {
+    "tracking_run_id": null,
+    "handoff": {
+      "path": null,
+      "sha256": null
+    },
+    "output_directory": null,
+    "algorithm": {
+      "tracker_id": "global-frequency-assignment-v1",
+      "tracker_version": "1.0.0",
+      "prediction_mode": "last_frequency",
+      "frequency_gate_hz": null,
+      "frequency_rate_gate_hz_per_s": null,
+      "power_change_gate_db": null,
+      "frequency_cost_weight": 1.0,
+      "power_cost_weight": 0.0,
+      "max_missed_rows": 1,
+      "gap_count_basis": "tested_rows_only",
+      "min_confirmed_detections": 3
+    },
+    "products": {
+      "save_plot": true,
+      "plot_dpi": 150
+    }
+  },
+  "unresolved_items": [
+    {
+      "field": "/payload",
+      "reason": "跟踪输入、数据驱动频率门限和输出位置尚未解析。其余字段是可调整的自主基线预设。",
+      "affected_actions": ["先解析交接与频率栅格；真实输入歧义未解决前不执行轨迹关联"],
+      "question": "优先从唯一交接、频率栅格和任务范围自主解析；只有多个同等输入或证据冲突时才一次性询问。"
+    }
+  ]
+}

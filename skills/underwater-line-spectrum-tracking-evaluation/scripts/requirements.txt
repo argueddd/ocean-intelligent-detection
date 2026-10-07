@@ -1,0 +1,4 @@
+# 轨迹评价契约校验与可选评价图；Harness 自动安装到项目虚拟环境。
+jsonschema>=4.18,<5
+referencing>=0.30,<1
+matplotlib>=3.10,<4

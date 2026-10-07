@@ -3,7 +3,8 @@
   "private": true,
   "dependencies": {
     "ocean-harness-vision": "link:../../../harness-vision",
-    "ocean-harness-control": "link:../../../harness-control"
+    "ocean-harness-control": "link:../../../harness-control",
+    "ocean-harness-skill-router": "link:../../../harness-skill-router"
   },
   "dsh": {
     "profile": {
@@ -11,6 +12,7 @@
         "@deepseek-ai/dsh-base",
         "@deepseek-ai/dsh-sdk-app",
         "ocean-harness-vision",
+        "ocean-harness-skill-router",
         "ocean-harness-control"
       ]
     }

@@ -27,6 +27,15 @@ test('正式水声 Skill 的行为测试使用真实 SDK sandbox 和项目 Pytho
   for (const [name, command] of [
     ['provided-skill-tests', `${quote(python)} -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-data-inspection/tests'))} -v`],
     ['independent-forward-tests', `${quote(python)} ${quote(path.join(workspaceRoot, 'backend/dev/contract-underwater-inspection.py'))} -v`],
+    ['beamforming-provided-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-beamforming/tests'))} -v`],
+    ['beamforming-handoff-tests', `${quote(python)} -B -W error::RuntimeWarning ${quote(path.join(workspaceRoot, 'backend/dev/contract-beamforming.py'))} -v`],
+    ['beamforming-evaluation-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-beamforming-evaluation/tests'))} -v`],
+    ['beamforming-evaluation-integration-tests', `${quote(python)} -B -W error::RuntimeWarning ${quote(path.join(workspaceRoot, 'backend/dev/contract-beamforming-evaluation.py'))} -v`],
+    ['line-spectrum-evaluation-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-line-spectrum-evaluation/tests'))} -v`],
+    ['line-spectrum-integration-tests', `${quote(python)} -B -W error::RuntimeWarning ${quote(path.join(workspaceRoot, 'backend/dev/contract-line-spectrum.py'))} -v`],
+    ['line-spectrum-tracking-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-line-spectrum-tracking/tests'))} -v`],
+    ['line-spectrum-tracking-evaluation-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-line-spectrum-tracking-evaluation/tests'))} -v`],
+    ['line-spectrum-tracking-integration-tests', `${quote(python)} -B -W error::RuntimeWarning ${quote(path.join(workspaceRoot, 'backend/dev/contract-line-spectrum-tracking.py'))} -v`],
   ]) {
     await t.test(name, async () => {
       const result = await ctx.shell.run(ctx.shell.resolve({ command, env }))
@@ -36,10 +45,17 @@ test('正式水声 Skill 的行为测试使用真实 SDK sandbox 和项目 Pytho
       assert.equal(result.aborted, false)
       assert.equal(result.sandbox.enforcement, 'full')
       assert.equal(result.sandbox.mode, 'workspace-write')
-      assert.match(result.stderr.text, /\nOK\s*$/)
-      const count = /Ran (\d+) tests/.exec(result.stderr.text)
+      assert.match(result.stderr.text, /\nOK(?: \(skipped=\d+\))?\s*$/)
+      const count = /Ran (\d+) tests?/.exec(result.stderr.text)
       assert.ok(count, '没有真实 unittest 运行统计')
-      summary.suites.push({ name, passed: true, testCount: Number(count[1]), enforcement: result.sandbox.enforcement })
+      const skippedCount = Number(/OK \(skipped=(\d+)\)/.exec(result.stderr.text)?.[1] || 0)
+      if (skippedCount) {
+        assert.equal(name, 'beamforming-provided-tests', '本项目集成用例不得跳过')
+        assert.equal(skippedCount, 1)
+        assert.match(result.stderr.text, /v0\.4\.3 integration suite requires sibling inspection and handoff skills/)
+      }
+      summary.suites.push({ name, passed: true, testCount: Number(count[1]), skippedCount,
+        passedCount: Number(count[1]) - skippedCount, enforcement: result.sandbox.enforcement })
       fs.writeFileSync(path.join(dir, 'summary.json'), JSON.stringify(summary, null, 2) + '\n')
     })
   }

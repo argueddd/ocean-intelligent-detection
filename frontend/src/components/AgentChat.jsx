@@ -32,6 +32,7 @@ import {
 } from "@phosphor-icons/react";
 import assistantHead from "../assets/assistant-head.webp";
 import { agents } from "../data/agents";
+import { harnessAgent, harnessQuickPrompts } from "../data/harness-agent";
 import {
   loadSessions,
   upsertSession,
@@ -52,18 +53,7 @@ import { canSendChat, interruptPendingSteps } from "../lib/chat-turn-state";
 
 const ParticleStage = React.lazy(() => import("./ParticleStage"));
 
-const activeAgent = IS_HARNESS_MODE ? {
-  name: "水下数据分析智能体",
-  short: "水下数据分析智能体",
-  role: "水声数据体检与分析",
-  shape: agents[0].shape,
-  capabilities: [
-    ["数据体检", "探查字段、样本轴与元数据，检查有限值、通道统计和实际覆盖范围。"],
-    ["Skill 调用", "根据任务选择已接入的 Skill，读取规则并执行其中的分析方法。"],
-    ["代码执行", "运行可复现的 Python 分析，保存参数、数值结果与图像证据。"],
-    ["视觉核验", "读取波形、PSD 与时频图，将可见图像特征与数值结果对照。"],
-  ],
-} : agents[0];
+const activeAgent = IS_HARNESS_MODE ? harnessAgent : agents[0];
 
 /* ---------------------------------------------------------------- 工具链路辅助 */
 
@@ -701,12 +691,7 @@ export default function AgentChat() {
   const activity = isThinking || cancellationState === "pending" ? "working" : attachment || attachmentReading ? "reading" : "waiting";
   const activityLabel = cancellationState === "pending" ? "正在停止本轮执行" : cancellationState === "failed" ? "停止尚未确认" : isThinking ? activityText || "正在执行" : attachmentReading ? "正在读取附件" : attachment ? "附件已准备" : "在线，可以开始";
 
-  const quickPrompts = IS_HARNESS_MODE ? [
-    "当前有哪些可用 Skills？分别能做什么？",
-    "探查 .run/try-data/array.h5，列出数据体检所需确认的信息。",
-    "检查 .run/try-data/unknown-fs.npy，不猜采样率，先做不依赖 Hz 的检查。",
-    "读取 .run/try-data/reference-results，用视觉工具核对分析图与数值结果。",
-  ] : [
+  const quickPrompts = IS_HARNESS_MODE ? harnessQuickPrompts : [
     "知识库里有哪些关于报销的制度？",
     "做一次知识库体检，看看有什么问题",
     "知识库当前健康状态如何？",
@@ -730,7 +715,7 @@ export default function AgentChat() {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = IS_HARNESS_MODE ? "水下数据分析智能体 | 对话工作台" : "知识库助手 | 对话工作台";
+    document.title = IS_HARNESS_MODE ? "深海智探 | 水下弱目标探测" : "知识库助手 | 对话工作台";
     return () => {
       document.title = previousTitle;
     };
@@ -1257,7 +1242,7 @@ export default function AgentChat() {
   };
 
   return (
-    <ArtifactProvider><main className={`chat-page${isThinking ? " is-working" : ""}`}>
+    <ArtifactProvider><main className={`chat-page${IS_HARNESS_MODE ? " is-harness" : ""}${isThinking ? " is-working" : ""}`}>
       <div className="environment-image" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
 
@@ -1274,14 +1259,14 @@ export default function AgentChat() {
 
         <aside className={`chat-history${historyOpen ? " is-open" : ""}`} aria-label="历史对话">
           <div className="chat-sidebar-home">
-            <a className="chat-home-link" href={IS_HARNESS_MODE ? "/chat" : "/"} aria-label={IS_HARNESS_MODE ? "水下数据分析工作台" : "返回知识库助手首页"}>
+            <a className="chat-home-link" href={IS_HARNESS_MODE ? "/chat" : "/"} aria-label={IS_HARNESS_MODE ? "深海智探工作台" : "返回知识库助手首页"}>
               <span className="chat-home-arrow" aria-hidden="true">
                 <ArrowLeft size={16} weight="bold" />
               </span>
               <BrandMark />
               <span className="chat-home-copy">
-                <strong>{IS_HARNESS_MODE ? "水下数据分析" : "知识库助手"}</strong>
-                <small>{IS_HARNESS_MODE ? "分析工作台" : "返回门户"}</small>
+                <strong>{IS_HARNESS_MODE ? "深海智探" : "知识库助手"}</strong>
+                <small>{IS_HARNESS_MODE ? "探测工作台" : "返回门户"}</small>
               </span>
             </a>
             <button
@@ -1328,9 +1313,9 @@ export default function AgentChat() {
 
           <div className="chat-history-heading">
             <span>历史对话</span>
-            <small>{sessions.length} 项</small>
+            {sessions.length ? <small>{sessions.length}</small> : null}
           </div>
-          <label className="chat-history-search">
+          {sessions.length > 5 ? <label className="chat-history-search">
             <MagnifyingGlass size={16} aria-hidden="true" />
             <span className="sr-only">搜索历史对话</span>
             <input
@@ -1339,7 +1324,7 @@ export default function AgentChat() {
               value={historyQuery}
               onChange={(event) => setHistoryQuery(event.target.value)}
             />
-          </label>
+          </label> : null}
           <nav className="chat-history-list" aria-label="最近的对话">
             {visibleHistory.map((item) => (
               <button
@@ -1365,12 +1350,12 @@ export default function AgentChat() {
                 />
               </button>
             ))}
-            {!visibleHistory.length ? <p className="chat-history-empty">还没有历史对话。</p> : null}
+            {!visibleHistory.length ? <p className="chat-history-empty">暂无会话</p> : null}
           </nav>
           <div className="chat-history-footer">
             <span>
               <FileText size={16} weight="duotone" aria-hidden="true" />
-              会话保存在本机
+              本机保存
             </span>
             <button
               type="button"
@@ -1416,7 +1401,7 @@ export default function AgentChat() {
               type="button"
               onClick={() => setPlannerOpen(true)}
             >
-              执行过程
+              {IS_HARNESS_MODE ? "过程" : "执行过程"}
               <CaretRight size={13} weight="bold" aria-hidden="true" />
             </button>
           </header>
@@ -1432,15 +1417,17 @@ export default function AgentChat() {
               <section className="chat-welcome" aria-labelledby="chat-welcome-title">
                 <RobotAvatar activity={activity} hero />
                 <p className="chat-welcome-label">{activeAgent.role}</p>
-                <h2 id="chat-welcome-title">{IS_HARNESS_MODE ? "今天想分析哪份水声数据？" : "今天想了解或整理什么？"}</h2>
-                <p>{IS_HARNESS_MODE ? "上传数据或提供项目内路径，我会先确认数据特点，再调用 Skill、执行分析并核对结果。" : "可以直接提问知识内容、上传文档入库、编辑知识图谱，或让我做一次知识库体检。"}</p>
+                <h2 id="chat-welcome-title">{IS_HARNESS_MODE ? "从数据到探测结论" : "今天想了解或整理什么？"}</h2>
+                <p>{IS_HARNESS_MODE ? "上传数据或结果，智能体将自主组织分析、算法与评价。" : "可以直接提问知识内容、上传文档入库、编辑知识图谱，或让我做一次知识库体检。"}</p>
                 <div className="chat-starter-grid" aria-label="快捷提问">
-                  {quickPrompts.map((prompt) => (
-                    <button type="button" key={prompt} onClick={() => sendMessage(prompt)}>
-                      <span>{prompt}</span>
+                  {quickPrompts.map((item) => {
+                    const prompt = typeof item === "string" ? item : item.prompt;
+                    const label = typeof item === "string" ? item : item.label;
+                    return <button type="button" key={prompt} onClick={() => sendMessage(prompt)}>
+                      <span>{label}</span>
                       <ArrowUp size={15} weight="bold" aria-hidden="true" />
-                    </button>
-                  ))}
+                    </button>;
+                  })}
                 </div>
               </section>
             ) : (
@@ -1510,7 +1497,7 @@ export default function AgentChat() {
                   rows={1}
                   value={draft}
                   aria-label="输入你的问题"
-                  placeholder={IS_HARNESS_MODE ? "输入问题，可直接粘贴截图或上传数据…" : "输入问题，可粘贴图片或上传附件…"}
+                  placeholder={IS_HARNESS_MODE ? "描述任务目标，或粘贴截图、上传数据与结果文件…" : "输入问题，可粘贴图片或上传附件…"}
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleKeyDown}
                   onPaste={handleComposerPaste}
@@ -1519,7 +1506,7 @@ export default function AgentChat() {
                   hasContent={Boolean(draft.trim())} hasAttachment={Boolean(attachment)} onSend={() => sendMessage()} onStop={() => cancelCurrentTurn()} />
               </div>
             </div>
-            <p>{IS_HARNESS_MODE ? "根据数据与执行证据回答；缺失或冲突的元数据会明确提示。" : "回答依据知识库证据生成；写操作都会先向你请求批准。"}</p>
+            {!IS_HARNESS_MODE ? <p>回答依据知识库证据生成；写操作都会先向你请求批准。</p> : null}
           </footer>
         </section>
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "水声波束形成"
+  short_description: "CBF/MVDR 参数确认、指定方向时域保存与按需谱图；未知参数先询问"
+  default_prompt: "使用 $underwater-beamforming 确认计算方向、时域保留方向、所需谱图与全部参数，只生成明确请求的结果，并保留可复核的参数与来源记录。"

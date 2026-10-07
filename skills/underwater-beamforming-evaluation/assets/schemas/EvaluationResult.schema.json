@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-beamforming-evaluation:contracts:1.0.0:EvaluationResult",
+  "title": "Beamforming EvaluationResult 1.0.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "record_type": {"const": "EvaluationResult"},
+    "document_status": {"const": "specified"},
+    "payload": {
+      "type": "object",
+      "properties": {
+        "evaluation_id": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+        "runtime_version": {"const": "1.0.0"},
+        "request_ref": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/file_reference"},
+        "mode": {"enum": ["descriptive", "paper", "engineering", "dual"]},
+        "execution_status": {"enum": ["completed", "partial", "failed"]},
+        "job_results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "job_id": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+              "command": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+              "subject": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+              "algorithm": {
+                "anyOf": [
+                  {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+                  {"type": "null"}
+                ]
+              },
+              "scenario": {
+                "anyOf": [
+                  {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+                  {"type": "null"}
+                ]
+              },
+              "status": {"enum": ["computed", "insufficient_evidence", "failed"]},
+              "evidence_class": {"enum": ["truth_referenced", "baseline_relative", "descriptive", "comparison"]},
+              "metrics": {"type": "object"},
+              "reason": {
+                "anyOf": [
+                  {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+                  {"type": "null"}
+                ]
+              },
+              "limitations": {
+                "type": "array",
+                "items": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"}
+              }
+            },
+            "required": ["job_id", "command", "subject", "algorithm", "scenario", "status", "evidence_class", "metrics", "reason", "limitations"],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "acceptance": {
+          "type": "object",
+          "properties": {
+            "status": {"enum": ["not_requested", "reported"]},
+            "basis": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"},
+            "decisions": {"type": "array", "items": {"type": "object"}}
+          },
+          "required": ["status", "basis", "decisions"],
+          "additionalProperties": false
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/artifact"}
+        },
+        "limitations": {
+          "type": "array",
+          "items": {"$ref": "urn:underwater-beamforming-evaluation:contracts:1.0.0#/$defs/text"}
+        }
+      },
+      "required": ["evaluation_id", "runtime_version", "request_ref", "mode", "execution_status", "job_results", "acceptance", "artifacts", "limitations"],
+      "additionalProperties": false
+    },
+    "unresolved_items": {"type": "array", "maxItems": 0}
+  },
+  "required": ["schema_version", "record_type", "document_status", "payload", "unresolved_items"],
+  "additionalProperties": false
+}

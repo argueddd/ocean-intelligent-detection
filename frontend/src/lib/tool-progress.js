@@ -73,11 +73,132 @@ function inspectionMode(command, finalCommandOnly = false) {
   return null;
 }
 
-function shellAction(command) {
+const BEAMFORMING_ACTIONS = {
+  "preflight.py": { check: "检查波束方案与参数确认记录", digests: "计算波束方案与参数组摘要" },
+  "execute.py": { check: "检查波束计算参数与执行门禁", digest: "计算波束计算范围摘要", run: "按已确认方案计算波束与所选结果" },
+  "inspection_handoff.py": { review: "查看已有体检结果与波束交接缺口", check: "检查波束输入导出参数与来源", digest: "计算波束输入导出范围摘要", prepare: "导出已确认的波束输入与待确认方案" },
+  "analyze_results.py": { check: "检查已保存波束与补图参数", digest: "计算波束补图范围摘要", run: "计算已选波束的谱与图" },
+  "bypass_handoff.py": { review: "查看单阵元或已有波束的交接信息", check: "检查单阵元或已有波束的交接参数", digest: "计算旁路交接范围摘要", prepare: "准备已选单阵元或波束的交接包", receive: "检查接收的单阵元或波束交接包" },
+};
+
+function skillScriptInvocations(command, workdir, skillName) {
+  const invocations = [];
+  for (const words of shellCommands(command)) {
+    const python = /^python(?:\d+(?:\.\d+)?)?$/.test(basename(words[0]));
+    let scriptIndex = 0;
+    if (python) {
+      scriptIndex = 1;
+      while (words[scriptIndex]?.startsWith("-")) {
+        const option = words[scriptIndex++];
+        // Inline code, modules and informational modes never run a script argument.
+        if (/^-[cm]/.test(option) || ["-h", "--help", "-V", "--version"].includes(option)) { scriptIndex = -1; break; }
+        if (option === "--") break;
+        if (["-W", "-X", "--check-hash-based-pycs"].includes(option)) scriptIndex++;
+      }
+      if (scriptIndex < 0) continue;
+    }
+    const script = words[scriptIndex] || "";
+    const source = /^[\\/]|^[A-Za-z]:/.test(script) ? script : `${workdir || ""}/${script}`;
+    const parts = [];
+    for (const part of source.split(/[\\/]/)) {
+      if (part === "..") parts.pop();
+      else if (part && part !== ".") parts.push(part);
+    }
+    // Generic script filenames require this Skill's actual path or working directory.
+    if (parts.slice(-3).join("/") !== `${skillName}/scripts/${basename(script)}`) continue;
+    invocations.push({ script: basename(script), args: words.slice(scriptIndex + 1) });
+  }
+  return invocations;
+}
+
+function beamformingAction(command, workdir) {
+  for (const { script, args } of skillScriptInvocations(command, workdir, "underwater-beamforming")) {
+    const title = BEAMFORMING_ACTIONS[script]?.[args[0]];
+    if (title) return { title };
+  }
+  return null;
+}
+
+function lineSpectrumEvaluationAction(command, workdir) {
+  for (const { script, args } of skillScriptInvocations(command, workdir, "underwater-line-spectrum-evaluation")) {
+    if (args.some(value => ["-h", "--help"].includes(value))) continue;
+    if (script === "validate_contract.py") return { title: "检查线谱评价文档字段与局部一致性" };
+    if (script === "validate_truth_labels.py") return { title: "检查线谱真值标签格式" };
+    if (script !== "evaluation_runtime.py") continue;
+    const options = args.includes("--") ? args.slice(0, args.indexOf("--")) : args;
+    if (options.includes("--preflight-only")) return { title: "检查线谱评价输入与跨文档证据" };
+    if (options.some(value => value === "--output-dir" || value.startsWith("--output-dir="))) return { title: "计算已确认的线谱评价指标" };
+  }
+  return null;
+}
+
+function lineSpectrumTrackingAction(command, workdir) {
+  for (const { script, args } of skillScriptInvocations(command, workdir, "underwater-line-spectrum-tracking")) {
+    if (args.some(value => ["-h", "--help"].includes(value))) continue;
+    if (script === "validate_contract.py") return { title: "检查线谱跟踪请求、交接与结果契约" };
+    if (script !== "tracking_runtime.py") continue;
+    if (args[0] === "review") return { title: "核对逐窗候选、帧账本与跟踪参数" };
+    if (args[0] === "execute") return { title: "按已确认门限关联线谱频率轨迹" };
+  }
+  return null;
+}
+
+function lineSpectrumTrackingEvaluationAction(command, workdir) {
+  for (const { script, args } of skillScriptInvocations(command, workdir, "underwater-line-spectrum-tracking-evaluation")) {
+    if (args.some(value => ["-h", "--help"].includes(value))) continue;
+    if (script === "validate_contract.py") return { title: "检查线谱轨迹评价请求与证据契约" };
+    if (script !== "evaluation_runtime.py") continue;
+    if (args[0] === "review") return { title: "核对轨迹包、真值范围与评价条件" };
+    if (args[0] === "execute") return { title: "计算已确认的线谱轨迹评价指标" };
+  }
+  return null;
+}
+
+function beamformingEvaluationAction(command, workdir) {
+  for (const { script, args } of skillScriptInvocations(command, workdir, "underwater-beamforming-evaluation")) {
+    if (args.some(value => ["-h", "--help"].includes(value))) continue;
+    if (script === "validate_contract.py") return { title: "检查波束评价请求与字段约束" };
+    if (script === "evaluation_runtime.py") {
+      const options = args.includes("--") ? args.slice(0, args.indexOf("--")) : args;
+      if (options.includes("--preflight-only")) return { title: "检查波束评价输入、摘要与证据边界" };
+      if (options.some(value => value === "--output-dir" || value.startsWith("--output-dir="))) return { title: "计算已确认的波束评价指标" };
+      return { title: "执行已确认的波束结果评价" };
+    }
+    if (script !== "beamforming_metrics.py") continue;
+    const titles = {
+      spectrum: "评价空间谱主瓣、旁瓣与峰结构",
+      doa: "评价方位估计误差与匹配结果",
+      "freq-bearing": "评价频率—方位响应结构",
+      btr: "评价波束方位随时间的稳定性",
+      signal: "评价波束时域输出与参考关系",
+      "spectrum-output": "评价波束输出频谱特征",
+      "time-frequency": "评价波束时频输出特征",
+      compare: "比较已确认可比的波束算法指标",
+      "plot-compare": "生成波束算法指标对比图",
+      "plot-pareto": "生成波束算法权衡关系图",
+      "plot-scenario-curves": "生成波束性能工况曲线",
+      "plot-radar": "生成波束算法多指标雷达图",
+    };
+    if (titles[args[0]]) return { title: titles[args[0]] };
+  }
+  return null;
+}
+
+function shellAction(command, workdir) {
   const mode = inspectionMode(command);
   if (mode === "probe") return { title: "探查数据格式与存储结构" };
   if (mode === "run") return { title: "执行数据体检与分析流程" };
   if (mode === "execute") return { title: "执行已配置的数据处理流程" };
+  const beamforming = beamformingAction(command, workdir);
+  if (beamforming) return beamforming;
+  const beamEvaluation = beamformingEvaluationAction(command, workdir);
+  if (beamEvaluation) return beamEvaluation;
+  const tracking = lineSpectrumTrackingAction(command, workdir);
+  if (tracking) return tracking;
+  const trackingEvaluation = lineSpectrumTrackingEvaluationAction(command, workdir);
+  if (trackingEvaluation) return trackingEvaluation;
+  const evaluation = lineSpectrumEvaluationAction(command, workdir);
+  if (evaluation) return evaluation;
   const commands = shellCommands(command);
   for (const words of commands) {
     const executable = basename(words[0]);
@@ -101,11 +222,14 @@ function shellAction(command) {
 }
 
 function inferredAction(name, args) {
-  if (name === "bash") return shellAction(args.command || "");
+  if (name === "bash") return shellAction(args.command || "", args.workdir);
   if (name === "read") return { title: fileAction(filePath(args)) };
   if (name === "write") return { title: fileAction(filePath(args), true) };
   if (name === "edit") return { title: "更新文件中的指定内容" };
-  if (name === "skill") return { title: /underwater-data-inspection/.test(args.name || args.skill_name || "") ? "加载数据体检与分析方法" : "加载任务所需的处理方法" };
+  if (name === "skill") {
+    const skillName = args.name || args.skill_name || "";
+    return { title: skillName === "underwater-data-inspection" ? "加载数据体检与分析方法" : skillName === "underwater-beamforming-evaluation" ? "加载波束结果评价与证据分析方法" : skillName === "underwater-beamforming" ? "加载波束形成与参数确认方法" : skillName === "underwater-line-spectrum-tracking-evaluation" ? "加载线谱轨迹评价与证据分析方法" : skillName === "underwater-line-spectrum-tracking" ? "加载线谱候选轨迹关联方法" : skillName === "underwater-line-spectrum-evaluation" ? "加载线谱结果评价与证据检查方法" : "加载任务所需的处理方法" };
+  }
   if (name === "glob") return { title: "查找任务需要的文件", groupKey: "locate", groupTitle: "定位任务需要的文件" };
   if (name === "fs") return { title: "处理本次文件操作请求" };
   if (name === "grep") return { title: "搜索任务需要的信息" };

@@ -1,0 +1,17 @@
+{
+  "product_version": "0.4.2",
+  "source_result": {
+    "path": null,
+    "sha256": null
+  },
+  "output_directory": null,
+  "algorithms": null,
+  "analysis_beam_ids": null,
+  "auxiliary_products": null,
+  "time_domain_beam_ids": null,
+  "analysis": null,
+  "max_working_bytes": null,
+  "max_artifact_bytes": null,
+  "title": null,
+  "approval": null
+}

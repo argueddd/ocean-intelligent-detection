@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "EvaluationRequest",
+  "document_status": "draft",
+  "payload": {
+    "request_id": null,
+    "mode": null,
+    "question": null,
+    "jobs": null,
+    "output_plan": null,
+    "confirmation": null,
+    "accepted_limitations": null
+  },
+  "unresolved_items": [
+    {
+      "path": "/payload",
+      "message": "Resolve the unique target and immutable evidence first. Derive reversible metric and output settings under harness-autonomy-v1; ask once only if target identity or evidence semantics remain materially ambiguous."
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "水声线谱评价"
+  short_description: "执行有/无真值线谱评价，核对覆盖、分母与证据"
+  default_prompt: "使用 $underwater-line-spectrum-evaluation 预检并评价已有线谱检测结果，严格区分无真值描述与有证据的性能指标。"

@@ -1,0 +1,3 @@
+# 本地 JSON Schema 校验依赖；Harness 自动安装到项目虚拟环境。
+jsonschema>=4.18,<5
+referencing>=0.30,<1

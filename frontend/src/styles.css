@@ -7074,6 +7074,137 @@ body.chat-view {
 .chat-timeline-item.is-interrupted .chat-timeline-dot { background: #8191a1; }
 .chat-timeline-item.is-cancelling .chat-timeline-dot { background: #b75664; }
 
+/* Harness landing: fewer words, lighter navigation, and clearer task entry points. */
+.chat-page.is-harness .chat-workspace {
+  grid-template-columns: 216px minmax(0, 1fr);
+}
+
+.chat-page.is-harness .chat-sidebar-home {
+  min-height: 64px;
+  padding-block: 7px;
+}
+
+.chat-page.is-harness .chat-sidebar-tools {
+  gap: 2px;
+  padding-bottom: 11px;
+}
+
+.chat-page.is-harness .chat-sidebar-tools > button {
+  min-height: 42px;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  padding-block: 4px;
+}
+
+.chat-page.is-harness .chat-sidebar-tool-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.chat-page.is-harness .chat-sidebar-tools small {
+  display: none;
+}
+
+.chat-page.is-harness .chat-history-heading {
+  padding-top: 13px;
+  padding-bottom: 7px;
+}
+
+.chat-page.is-harness .chat-history-empty {
+  margin-top: 6px;
+  color: #a0afbd;
+  font-size: 10px;
+}
+
+.chat-page.is-harness .chat-history-footer {
+  min-height: 50px;
+}
+
+.chat-page.is-harness .chat-agent-header {
+  min-height: 70px;
+}
+
+.chat-page.is-harness .chat-planner-shortcut {
+  display: none;
+}
+
+.chat-page.is-harness .chat-welcome {
+  width: min(680px, calc(100% - 48px));
+  padding-block: 18px 54px;
+}
+
+.chat-page.is-harness .chat-welcome > .robot-avatar {
+  margin-bottom: 2px;
+}
+
+.chat-page.is-harness .chat-welcome-label {
+  margin: 2px 0 7px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.chat-page.is-harness .chat-welcome h2 {
+  font-size: clamp(30px, 3.2vw, 46px);
+  letter-spacing: -0.055em;
+}
+
+.chat-page.is-harness .chat-welcome > p:not(.chat-welcome-label) {
+  max-width: none;
+  margin: 11px 0 28px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.chat-page.is-harness .chat-starter-grid {
+  width: auto;
+  grid-template-columns: repeat(3, auto);
+  gap: 8px;
+}
+
+.chat-page.is-harness .chat-starter-grid button {
+  min-height: 42px;
+  gap: 16px;
+  border-radius: 12px;
+  padding: 0 13px 0 15px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.chat-page.is-harness .chat-composer-shell {
+  padding-bottom: 12px;
+}
+
+@media (max-width: 880px) {
+  .chat-page.is-harness .chat-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chat-page.is-harness .chat-planner-shortcut {
+    display: inline-flex;
+    margin-left: auto;
+    padding-inline: 11px;
+  }
+
+  .chat-page.is-harness .planner-edge-trigger {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .chat-page.is-harness .chat-welcome {
+    width: calc(100% - 32px);
+  }
+
+  .chat-page.is-harness .chat-starter-grid {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .chat-page.is-harness .chat-starter-grid button {
+    width: 100%;
+  }
+}
+
 /* Uploaded images stay next to their question; cancellation keeps the composer locked until ACK. */
 .chat-composer-controls { grid-template-columns: 30px minmax(0, 1fr) 30px; }
 .chat-composer.is-expanded .chat-composer-controls { grid-template-columns: 30px minmax(0, 1fr) 30px; }

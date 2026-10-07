@@ -508,6 +508,103 @@ function generateShape(shape, count) {
       [x, y, z] = faces[face];
       x += (bar - 2) * 0.56;
       y += -0.88 + halfHeight;
+    } else if (shape === 8) {
+      // Deep-sea research vessel: hull, bridge, mast and a restrained sonar fan.
+      if (progress < 0.48) {
+        const hullProgress = randA;
+        x = -1.44 + hullProgress * 2.94;
+        const sternTaper = Math.min(1, 0.72 + hullProgress * 3.5);
+        const bowTaper = hullProgress > 0.68
+          ? Math.max(0.08, (1 - hullProgress) / 0.32)
+          : 1;
+        const halfBeam = 0.43 * sternTaper * Math.sqrt(bowTaper);
+        const crossSection = randB * Math.PI * 2;
+        const depth = (0.3 + Math.sin(hullProgress * Math.PI) * 0.16) * Math.sqrt(bowTaper);
+        z = Math.cos(crossSection) * halfBeam * (0.86 + randC * 0.14);
+        y = -0.2 + Math.sin(crossSection) * depth;
+        if (Math.sin(crossSection) > 0.35) y *= 0.72;
+      } else if (progress < 0.57) {
+        const side = index % 2 === 0 ? -1 : 1;
+        const hullOutline = [
+          [-1.42, 0.02, side * 0.3],
+          [-1.04, 0.12, side * 0.39],
+          [0.82, 0.12, side * 0.39],
+          [1.48, -0.02, side * 0.05],
+          [1.1, -0.46, side * 0.12],
+          [-0.82, -0.58, side * 0.27],
+          [-1.42, 0.02, side * 0.3],
+        ];
+        [x, y, z] = pointOnPolyline(hullOutline, randA);
+        x += (randB - 0.5) * 0.025;
+        y += (randC - 0.5) * 0.025;
+      } else if (progress < 0.71) {
+        const upper = index % 3 === 0;
+        const center = upper ? [0.08, 0.52, 0] : [-0.24, 0.25, 0];
+        const halfSize = upper ? [0.38, 0.16, 0.27] : [0.72, 0.17, 0.33];
+        [x, y, z] = pointOnBox(center, halfSize, randA, randB, randC);
+      } else if (progress < 0.8) {
+        const window = index % 4;
+        const centerX = -0.2 + window * 0.18;
+        const side = index % 2 === 0 ? -1 : 1;
+        const windowOutline = [
+          [centerX - 0.065, 0.55, side * 0.285],
+          [centerX + 0.065, 0.55, side * 0.285],
+          [centerX + 0.055, 0.64, side * 0.285],
+          [centerX - 0.055, 0.64, side * 0.285],
+          [centerX - 0.065, 0.55, side * 0.285],
+        ];
+        [x, y, z] = pointOnPolyline(windowOutline, randA);
+        z += (randB - 0.5) * 0.012;
+      } else if (progress < 0.89) {
+        const mastPart = index % 5;
+        if (mastPart < 2) {
+          [x, y, z] = pointOnTube(
+            [-0.08, 0.67, 0],
+            [-0.08, 1.18, 0],
+            randA,
+            randB * Math.PI * 2,
+            0.025,
+          );
+        } else if (mastPart < 4) {
+          [x, y, z] = pointOnTube(
+            [-0.36, 1.02, 0],
+            [0.2, 1.02, 0],
+            randA,
+            randB * Math.PI * 2,
+            0.022,
+          );
+        } else {
+          const angle = randA * Math.PI * 2;
+          x = -0.08 + Math.cos(angle) * 0.16;
+          y = 1.19 + Math.sin(angle) * 0.09;
+          z = (randB - 0.5) * 0.035;
+        }
+      } else {
+        const source = [0.18, -0.5, 0];
+        if (index % 4 !== 0) {
+          const band = index % 3;
+          const angle = -0.82 + randA * 1.64;
+          const radius = 0.52 + band * 0.26;
+          x = source[0] + Math.sin(angle) * radius;
+          y = source[1] - Math.cos(angle) * radius;
+          z = (randB - 0.5) * (0.035 + band * 0.018);
+        } else {
+          const ray = index % 5;
+          const angle = -0.74 + (ray / 4) * 1.48;
+          const radius = 0.98;
+          [x, y, z] = pointOnTube(
+            source,
+            [
+              source[0] + Math.sin(angle) * radius,
+              source[1] - Math.cos(angle) * radius,
+              0,
+            ],
+            randA,
+            randB * Math.PI * 2,
+            0.012,
+          );
+        }
+      }
     } else {
       if (progress < 0.26) {
         const coreProgress = progress / 0.26;
@@ -747,8 +844,11 @@ export default function ParticleStage({ shape, onReady, onError }) {
 
       const particleObject = new THREE.Points(geometry, material);
       particleObject.rotation.x =
-        shapeRef.current === 3 ? -0.68 : shapeRef.current === 5 ? -0.22 : -0.36;
-      particleObject.rotation.y = shapeRef.current === 3 ? -0.46 : 0;
+        shapeRef.current === 3 ? -0.68
+          : shapeRef.current === 5 ? -0.22
+            : shapeRef.current === 8 ? -0.16
+              : -0.36;
+      particleObject.rotation.y = shapeRef.current === 3 ? -0.46 : shapeRef.current === 8 ? -0.2 : 0;
       scene.add(particleObject);
 
       const lineGeometry = new THREE.BufferGeometry();
@@ -864,17 +964,18 @@ export default function ParticleStage({ shape, onReady, onError }) {
         if (!reducedMotion) {
           const isCityModel = lastShape === 3;
           const isKnowledgePlanet = lastShape === 5;
+          const isResearchVessel = lastShape === 8;
           const targetRotationX =
-            (isCityModel ? -0.68 : isKnowledgePlanet ? -0.22 : -0.36) +
-            Math.sin(elapsed * 0.34) * (isCityModel ? 0.035 : 0.06);
+            (isCityModel ? -0.68 : isKnowledgePlanet ? -0.22 : isResearchVessel ? -0.16 : -0.36) +
+            Math.sin(elapsed * 0.34) * (isCityModel ? 0.035 : isResearchVessel ? 0.025 : 0.06);
           const targetRotationY =
-            (isCityModel ? -0.46 : 0) +
-            Math.sin(elapsed * 0.24) * (isCityModel ? 0.07 : 0.18);
+            (isCityModel ? -0.46 : isResearchVessel ? -0.2 : 0) +
+            Math.sin(elapsed * 0.24) * (isCityModel ? 0.07 : isResearchVessel ? 0.08 : 0.18);
           particleObject.rotation.x +=
             (targetRotationX - particleObject.rotation.x) * 0.045;
           particleObject.rotation.y +=
             (targetRotationY - particleObject.rotation.y) * 0.045;
-          particleObject.rotation.z = Math.sin(elapsed * 0.18) * 0.025;
+          particleObject.rotation.z = Math.sin(elapsed * 0.18) * (isResearchVessel ? 0.012 : 0.025);
           dust.rotation.y -= 0.00022;
           cameraTarget.x = pointer.x * 0.24;
           cameraTarget.y = -pointer.y * 0.16;

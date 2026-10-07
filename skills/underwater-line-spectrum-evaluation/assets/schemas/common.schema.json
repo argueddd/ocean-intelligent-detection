@@ -1,0 +1,1681 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0",
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "file",
+            "session",
+            "unavailable"
+          ]
+        },
+        "locator": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "locator",
+        "sha256",
+        "object_id",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "time": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "known",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "intervals_s": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "items": false,
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "minItems": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "reference",
+        "intervals_s",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/time"
+        },
+        "frequency_band_hz": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "number",
+              "minimum": 0
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "time",
+        "frequency_band_hz"
+      ],
+      "additionalProperties": false
+    },
+    "beam": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "known",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "result_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "beamformer": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "beam_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metadata_ref": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "result_sha256",
+        "beamformer",
+        "beam_id",
+        "metadata_ref",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "known",
+            "unknown"
+          ]
+        },
+        "input_package_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "signal_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "beam": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/beam"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "input_package_sha256",
+        "signal_id",
+        "beam",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "target_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "result_ref": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "task_kind": {
+          "enum": [
+            "framewise",
+            "averaged_spectrum"
+          ]
+        },
+        "source": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/source"
+        },
+        "configuration_ref": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+        },
+        "scope": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/scope"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "target_id",
+        "result_ref",
+        "run_id",
+        "task_id",
+        "task_kind",
+        "source",
+        "configuration_ref",
+        "scope",
+        "limitations"
+      ],
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "affected_actions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "field",
+        "reason",
+        "affected_actions",
+        "question"
+      ],
+      "additionalProperties": false
+    },
+    "truth_binding": {
+      "type": "object",
+      "properties": {
+        "target_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "status": {
+          "enum": [
+            "provided",
+            "none",
+            "unknown"
+          ]
+        },
+        "coverage_ref": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "target_id",
+        "status",
+        "coverage_ref",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "region": {
+      "type": "object",
+      "properties": {
+        "region_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "scope": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/scope"
+        },
+        "label_status": {
+          "enum": [
+            "complete",
+            "partial_positive",
+            "verified_background",
+            "unlabeled",
+            "excluded",
+            "disputed"
+          ]
+        },
+        "label_grain": {
+          "enum": [
+            "cfar_cell",
+            "candidate_peak",
+            "frame",
+            "segment",
+            "none",
+            "unknown"
+          ]
+        },
+        "positive_definition": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "negative_definition": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "h0_definition": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unmarked_policy": {
+          "enum": [
+            "unknown",
+            "negative",
+            "out_of_scope"
+          ]
+        },
+        "labels_ref": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+          },
+          "minItems": 0
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "region_id",
+        "scope",
+        "label_status",
+        "label_grain",
+        "positive_definition",
+        "negative_definition",
+        "h0_definition",
+        "unmarked_policy",
+        "labels_ref",
+        "evidence_refs",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "independence": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "independent",
+            "not_independent",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "relative_to_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+          },
+          "minItems": 0
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "status",
+        "relative_to_refs",
+        "basis"
+      ],
+      "additionalProperties": false
+    },
+    "TruthCoverage": {
+      "type": "object",
+      "properties": {
+        "coverage_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/target"
+        },
+        "availability": {
+          "enum": [
+            "available",
+            "none",
+            "unknown"
+          ]
+        },
+        "evidence_origin": {
+          "enum": [
+            "measurement_annotation",
+            "simulation",
+            "injection",
+            "model",
+            "expected_reference",
+            "none",
+            "unknown"
+          ]
+        },
+        "provenance_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+          },
+          "minItems": 0
+        },
+        "label_semantics": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/region"
+          },
+          "minItems": 0
+        },
+        "outside_regions_policy": {
+          "const": "unknown"
+        },
+        "independence": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/independence"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "coverage_id",
+        "target",
+        "availability",
+        "evidence_origin",
+        "provenance_refs",
+        "label_semantics",
+        "regions",
+        "outside_regions_policy",
+        "independence",
+        "limitations"
+      ],
+      "additionalProperties": false
+    },
+    "metric_kind": {
+      "enum": [
+        "candidate_count",
+        "mean_candidates_per_frame",
+        "candidate_frame_fraction",
+        "false_count",
+        "mean_false_per_frame",
+        "false_per_hour",
+        "cell_false_fraction",
+        "background_frame_false_fraction",
+        "background_segment_false_fraction",
+        "recall",
+        "precision",
+        "f1",
+        "frequency_mae_hz",
+        "frequency_rmse_hz",
+        "frequency_bias_hz",
+        "mean_threshold_margin_db",
+        "mean_background_contrast_db"
+      ]
+    },
+    "matching_rule": {
+      "type": "object",
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "status": {
+          "enum": [
+            "specified",
+            "pending"
+          ]
+        },
+        "frequency_gate_hz": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "time_rule": {
+          "anyOf": [
+            {
+              "enum": [
+                "frame_identity",
+                "tolerance",
+                "not_applicable"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "time_gate_s": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignment_method": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tie_break": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "duplicate_policy": {
+          "anyOf": [
+            {
+              "enum": [
+                "count_as_false",
+                "report_separately"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "rule_id",
+        "status",
+        "frequency_gate_hz",
+        "time_rule",
+        "time_gate_s",
+        "assignment_method",
+        "tie_break",
+        "duplicate_policy",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "metric_request": {
+      "type": "object",
+      "properties": {
+        "metric_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "metric_kind": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/metric_kind"
+        },
+        "compute": {
+          "type": "boolean"
+        },
+        "definition_version": {
+          "const": "0.1.0"
+        },
+        "matching_rule_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "count_stage": {
+          "enum": [
+            "final_candidate",
+            "cell_threshold_crossing"
+          ]
+        },
+        "denominator_rule": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "aggregation_rule": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "coverage_rule": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "metric_id",
+        "target_id",
+        "metric_kind",
+        "compute",
+        "definition_version",
+        "matching_rule_id",
+        "count_stage",
+        "denominator_rule",
+        "aggregation_rule",
+        "coverage_rule"
+      ],
+      "additionalProperties": false
+    },
+    "artifact_request": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "compute": {
+          "type": "boolean"
+        },
+        "display": {
+          "type": "boolean"
+        },
+        "save": {
+          "type": "boolean"
+        },
+        "definition": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "target_ids",
+        "kind",
+        "compute",
+        "display",
+        "save",
+        "definition"
+      ],
+      "additionalProperties": false
+    },
+    "output_plan": {
+      "type": "object",
+      "properties": {
+        "display_metric_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "save_metric_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "save_destination": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "artifact_requests": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/artifact_request"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "display_metric_ids",
+        "save_metric_ids",
+        "save_destination",
+        "artifact_requests"
+      ],
+      "additionalProperties": false
+    },
+    "confirmation": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "not_requested",
+            "pending",
+            "recorded"
+          ]
+        },
+        "evidence_ref": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "statement": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "evidence_ref",
+        "statement"
+      ],
+      "additionalProperties": false
+    },
+    "EvaluationRequest": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/target"
+          },
+          "minItems": 1
+        },
+        "truth_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/truth_binding"
+          },
+          "minItems": 1
+        },
+        "metric_requests": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/metric_request"
+          },
+          "minItems": 0
+        },
+        "matching_rules": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/matching_rule"
+          },
+          "minItems": 0
+        },
+        "output_plan": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/output_plan"
+        },
+        "confirmation": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/confirmation"
+        },
+        "accepted_limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "request_id",
+        "question",
+        "targets",
+        "truth_bindings",
+        "metric_requests",
+        "matching_rules",
+        "output_plan",
+        "confirmation",
+        "accepted_limitations"
+      ],
+      "additionalProperties": false
+    },
+    "quantity": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "definition": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "value",
+        "unit",
+        "definition",
+        "evidence_refs"
+      ],
+      "additionalProperties": false
+    },
+    "basis": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "empirical_descriptive",
+            "label_matched",
+            "verified_background",
+            "theoretical",
+            "calibration_observation",
+            "validation_observation",
+            "expected_reference",
+            "image_only",
+            "unknown"
+          ]
+        },
+        "truth_status": {
+          "enum": [
+            "complete",
+            "partial",
+            "verified_background",
+            "none",
+            "unknown"
+          ]
+        },
+        "coverage_ref": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "region_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+          },
+          "minItems": 0
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "kind",
+        "truth_status",
+        "coverage_ref",
+        "region_ids",
+        "evidence_refs",
+        "limitations"
+      ],
+      "additionalProperties": false
+    },
+    "accounting": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown"
+          ]
+        },
+        "trial_unit": {
+          "enum": [
+            "candidate",
+            "frame",
+            "cfar_cell",
+            "segment",
+            "hour",
+            "matched_candidate",
+            "not_applicable"
+          ]
+        },
+        "zero_detection_units_included": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidates_complete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requested_units": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "processed_units": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "excluded_units": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exclusion_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "status",
+        "trial_unit",
+        "zero_detection_units_included",
+        "candidates_complete",
+        "requested_units",
+        "processed_units",
+        "excluded_units",
+        "exclusion_reasons",
+        "evidence_refs"
+      ],
+      "additionalProperties": false
+    },
+    "metric_result": {
+      "type": "object",
+      "properties": {
+        "metric_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "metric_kind": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/metric_kind"
+        },
+        "definition_version": {
+          "const": "0.1.0"
+        },
+        "definition": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "status": {
+          "enum": [
+            "computed",
+            "not_requested",
+            "not_run",
+            "pending_confirmation",
+            "insufficient_evidence",
+            "not_applicable",
+            "undefined",
+            "not_implemented",
+            "failed"
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "numerator": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/quantity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "denominator": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/quantity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actual_scope": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/scope"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matching_rule_ref": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "count_stage": {
+          "enum": [
+            "final_candidate",
+            "cell_threshold_crossing"
+          ]
+        },
+        "basis": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/basis"
+        },
+        "accounting": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/accounting"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "metric_id",
+        "target_id",
+        "metric_kind",
+        "definition_version",
+        "definition",
+        "status",
+        "value",
+        "unit",
+        "numerator",
+        "denominator",
+        "actual_scope",
+        "matching_rule_ref",
+        "count_stage",
+        "basis",
+        "accounting",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "observation",
+            "interpretation",
+            "assumption",
+            "recommendation"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "kind",
+        "text",
+        "target_ids",
+        "evidence_refs"
+      ],
+      "additionalProperties": false
+    },
+    "artifact": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 1
+        },
+        "status": {
+          "enum": [
+            "not_requested",
+            "not_generated",
+            "temporary",
+            "saved",
+            "unavailable",
+            "failed"
+          ]
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "artifact_id",
+        "kind",
+        "target_ids",
+        "status",
+        "reference",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "acceptance": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "not_requested",
+            "inconclusive",
+            "pass",
+            "fail",
+            "conditional_pass"
+          ]
+        },
+        "criteria_ref": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+          },
+          "minItems": 0
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "metric_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "status",
+        "criteria_ref",
+        "evidence_refs",
+        "reason",
+        "metric_ids"
+      ],
+      "additionalProperties": false
+    },
+    "EvaluationResult": {
+      "type": "object",
+      "properties": {
+        "evaluation_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "request_ref": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+        },
+        "configuration_ref": {
+          "anyOf": [
+            {
+              "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/target"
+          },
+          "minItems": 1
+        },
+        "execution_status": {
+          "enum": [
+            "not_run",
+            "blocked",
+            "running",
+            "completed",
+            "partial",
+            "failed"
+          ]
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/metric_result"
+          },
+          "minItems": 0
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/finding"
+          },
+          "minItems": 0
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/artifact"
+          },
+          "minItems": 0
+        },
+        "acceptance": {
+          "$ref": "urn:underwater-line-spectrum-evaluation:contracts:0.1.0#/$defs/acceptance"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "evaluation_id",
+        "request_ref",
+        "configuration_ref",
+        "targets",
+        "execution_status",
+        "metrics",
+        "findings",
+        "artifacts",
+        "acceptance",
+        "limitations"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

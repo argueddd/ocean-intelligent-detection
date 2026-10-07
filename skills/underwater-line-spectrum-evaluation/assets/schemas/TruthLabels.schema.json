@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-line-spectrum-evaluation:truth-labels:1.0.0",
+  "title": "TruthLabels",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "record_type": {"const": "TruthLabels"},
+    "target_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "run_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "task_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "time_reference": {
+      "anyOf": [
+        {"type": "string", "minLength": 1, "pattern": "\\S"},
+        {"type": "null"}
+      ]
+    },
+    "sample_rate_hz": {
+      "anyOf": [
+        {"type": "number", "exclusiveMinimum": 0},
+        {"type": "null"}
+      ]
+    },
+    "labels": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/label"},
+      "minItems": 0
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "pattern": "\\S"},
+      "minItems": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "record_type",
+    "target_id",
+    "run_id",
+    "task_id",
+    "time_reference",
+    "sample_rate_hz",
+    "labels",
+    "limitations"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "sample_interval": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "integer", "minimum": 0},
+        {"type": "integer", "minimum": 1}
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "label": {
+      "type": "object",
+      "properties": {
+        "truth_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+        "region_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+        "frequency_hz": {"type": "number", "minimum": 0},
+        "sample_intervals": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {"$ref": "#/$defs/sample_interval"},
+              "minItems": 1
+            },
+            {"type": "null"}
+          ]
+        },
+        "time_s": {
+          "anyOf": [
+            {"type": "number"},
+            {"type": "null"}
+          ]
+        },
+        "note": {
+          "anyOf": [
+            {"type": "string", "minLength": 1, "pattern": "\\S"},
+            {"type": "null"}
+          ]
+        }
+      },
+      "required": [
+        "truth_id",
+        "region_id",
+        "frequency_hz",
+        "sample_intervals",
+        "time_s",
+        "note"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

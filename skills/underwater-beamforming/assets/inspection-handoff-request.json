@@ -1,0 +1,35 @@
+{
+  "handoff_version": "0.1",
+  "inspection_result": {
+    "path": null,
+    "sha256": null
+  },
+  "sample_range": null,
+  "channel_indices": null,
+  "identity": {
+    "data_role": null,
+    "channel_ids": null,
+    "role_evidence": null,
+    "mapping_evidence": null
+  },
+  "processing_history": {
+    "values": null,
+    "evidence": null
+  },
+  "time_reference": {
+    "kind": null,
+    "origin": null
+  },
+  "units_policy": "preserve_report_value_or_unknown",
+  "inspection_linkage": "accept_size_mtime_link_not_historical_content_hash",
+  "limitations_acknowledgement": null,
+  "output": {
+    "directory": null,
+    "dtype": "float64",
+    "conversion": "exact_numeric_no_scaling",
+    "block_samples": null,
+    "max_read_mib": null,
+    "max_artifact_bytes": null
+  },
+  "approval": null
+}

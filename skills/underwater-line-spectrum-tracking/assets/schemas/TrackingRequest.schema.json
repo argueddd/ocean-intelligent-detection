@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-line-spectrum-tracking:request:1.0.0",
+  "title": "TrackingRequest 1.0.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "record_type": {"const": "TrackingRequest"},
+    "document_status": {"enum": ["draft", "specified"]},
+    "payload": {"type": "object"},
+    "unresolved_items": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/issue"}
+    }
+  },
+  "required": ["schema_version", "record_type", "document_status", "payload", "unresolved_items"],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"document_status": {"const": "specified"}}, "required": ["document_status"]},
+      "then": {
+        "properties": {
+          "payload": {"$ref": "#/$defs/specified_payload"},
+          "unresolved_items": {"maxItems": 0}
+        }
+      },
+      "else": {"properties": {"unresolved_items": {"minItems": 1}}}
+    }
+  ],
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "issue": {
+      "type": "object",
+      "properties": {
+        "field": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 1},
+        "affected_actions": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+        "question": {"type": "string", "minLength": 1}
+      },
+      "required": ["field", "reason", "affected_actions", "question"],
+      "additionalProperties": false
+    },
+    "specified_payload": {
+      "type": "object",
+      "properties": {
+        "tracking_run_id": {"type": "string", "minLength": 1},
+        "handoff": {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string", "minLength": 1},
+            "sha256": {"$ref": "#/$defs/hash"}
+          },
+          "required": ["path", "sha256"],
+          "additionalProperties": false
+        },
+        "output_directory": {"type": "string", "minLength": 1},
+        "algorithm": {
+          "type": "object",
+          "properties": {
+            "tracker_id": {"const": "global-frequency-assignment-v1"},
+            "tracker_version": {"const": "1.0.0"},
+            "prediction_mode": {"enum": ["last_frequency", "constant_velocity"]},
+            "frequency_gate_hz": {"type": "number", "exclusiveMinimum": 0},
+            "frequency_rate_gate_hz_per_s": {
+              "anyOf": [{"type": "number", "exclusiveMinimum": 0}, {"type": "null"}]
+            },
+            "power_change_gate_db": {
+              "anyOf": [{"type": "number", "exclusiveMinimum": 0}, {"type": "null"}]
+            },
+            "frequency_cost_weight": {"type": "number", "minimum": 0},
+            "power_cost_weight": {"type": "number", "minimum": 0},
+            "max_missed_rows": {"type": "integer", "minimum": 0},
+            "gap_count_basis": {"enum": ["tested_rows_only", "all_rows"]},
+            "min_confirmed_detections": {"type": "integer", "minimum": 2}
+          },
+          "required": ["tracker_id", "tracker_version", "prediction_mode", "frequency_gate_hz",
+            "frequency_rate_gate_hz_per_s", "power_change_gate_db", "frequency_cost_weight",
+            "power_cost_weight", "max_missed_rows", "gap_count_basis", "min_confirmed_detections"],
+          "additionalProperties": false
+        },
+        "products": {
+          "type": "object",
+          "properties": {
+            "save_plot": {"type": "boolean"},
+            "plot_dpi": {"type": "integer", "minimum": 72, "maximum": 600}
+          },
+          "required": ["save_plot", "plot_dpi"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["tracking_run_id", "handoff", "output_directory", "algorithm", "products"],
+      "additionalProperties": false
+    }
+  }
+}

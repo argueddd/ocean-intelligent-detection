@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-line-spectrum-tracking-evaluation:truth:1.0.0",
+  "title": "TrackingTruthLabels 1.0.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "record_type": {"const": "TrackingTruthLabels"},
+    "label_status": {"enum": ["partial_positive", "complete"]},
+    "source": {"$ref": "#/$defs/source"},
+    "label_scope": {"$ref": "#/$defs/scope"},
+    "truth_tracks": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/track"},
+      "minItems": 1
+    },
+    "provenance": {"$ref": "#/$defs/provenance"},
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    }
+  },
+  "required": ["schema_version", "record_type", "label_status", "source", "label_scope", "truth_tracks", "provenance", "limitations"],
+  "additionalProperties": false,
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "source": {
+      "type": "object",
+      "properties": {
+        "detection_run_id": {"type": "string", "minLength": 1},
+        "detection_task_id": {"type": "string", "minLength": 1},
+        "candidate_table_sha256": {"$ref": "#/$defs/hash"},
+        "ledger_sha256": {"$ref": "#/$defs/hash"},
+        "time_reference": {"type": "string", "minLength": 1}
+      },
+      "required": ["detection_run_id", "detection_task_id", "candidate_table_sha256", "ledger_sha256", "time_reference"],
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "row_ranges": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {"type": "integer", "minimum": 0},
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 1
+        },
+        "frequency_range_hz": {
+          "type": "array",
+          "items": {"type": "number", "minimum": 0},
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "truth_tracks_complete": {"type": "boolean"},
+        "negative_labels_complete": {"type": "boolean"}
+      },
+      "required": ["row_ranges", "frequency_range_hz", "truth_tracks_complete", "negative_labels_complete"],
+      "additionalProperties": false
+    },
+    "point": {
+      "type": "object",
+      "properties": {
+        "row": {"type": "integer", "minimum": 0},
+        "time_seconds": {"type": "number"},
+        "frequency_hz": {"type": "number", "minimum": 0}
+      },
+      "required": ["row", "time_seconds", "frequency_hz"],
+      "additionalProperties": false
+    },
+    "track": {
+      "type": "object",
+      "properties": {
+        "truth_track_id": {"type": "string", "minLength": 1},
+        "points": {"type": "array", "items": {"$ref": "#/$defs/point"}, "minItems": 1}
+      },
+      "required": ["truth_track_id", "points"],
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "description": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "created_by": {"type": "string", "minLength": 1}
+      },
+      "required": ["description", "version", "created_by"],
+      "additionalProperties": false
+    }
+  }
+}

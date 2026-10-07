@@ -1,0 +1,28 @@
+{
+  "bypass_version": "0.1",
+  "source_handoff": {
+    "path": null,
+    "sha256": null
+  },
+  "selected_channel_ids": null,
+  "signal_metadata": null,
+  "frequency_coverage": {
+    "status": null,
+    "band_hz": null,
+    "evidence": null
+  },
+  "validity": {
+    "status": null,
+    "sample_intervals": null,
+    "evidence": null
+  },
+  "unknown_metadata_policy": "preserve_unknown_for_transfer_only",
+  "limitations_acknowledgement": null,
+  "output": {
+    "directory": null,
+    "block_samples": null,
+    "max_working_bytes": null,
+    "max_artifact_bytes": null
+  },
+  "approval": null
+}

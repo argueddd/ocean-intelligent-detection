@@ -1,0 +1,4 @@
+interface:
+  display_name: "线谱轨迹跟踪"
+  short_description: "跨时间窗关联水声线谱候选并生成完整、可追溯的频率轨迹结果"
+  default_prompt: "使用 $underwater-line-spectrum-tracking 将已完成的逐窗线谱候选关联为频率轨迹，并保留检测来源与未决参数。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "线谱轨迹跟踪评价"
+  short_description: "按证据等级评价线谱轨迹连续性、碎片化、误差及身份保持情况"
+  default_prompt: "使用 $underwater-line-spectrum-tracking-evaluation 评价已有线谱轨迹结果，明确指标证据、限制和验收结论。"

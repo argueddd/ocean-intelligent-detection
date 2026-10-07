@@ -1,0 +1,4 @@
+interface:
+  display_name: "波束形成评价"
+  short_description: "按真值、基线与验收阈值评价已有波束结果"
+  default_prompt: "使用 $underwater-beamforming-evaluation 评价这组已有水声波束形成结果，明确证据边界、指标、限制和下一轮建议。"
