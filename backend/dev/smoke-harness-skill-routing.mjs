@@ -13,6 +13,7 @@ const skillNames = [
   'underwater-data-inspection',
   'underwater-beamforming',
   'underwater-beamforming-evaluation',
+  'underwater-line-spectrum-detection',
   'underwater-line-spectrum-evaluation',
   'underwater-line-spectrum-tracking',
   'underwater-line-spectrum-tracking-evaluation',
@@ -64,9 +65,8 @@ const scenarios = [
     prompt: '已有完整 TrackingResultPackage，我要评价轨迹连续性、短轨比例、频率误差和碎片化，不重新关联候选。请判断并加载适用的现有 Skill，然后只说明选择结果，不读取文件、不执行。',
   },
   {
-    name: 'missing-line-detector', expected: [],
-    prompt: '我要从一份已形成波束的 PSD 里执行线谱检测并生成候选和逐帧 ledger。现在只判断现有能力是否支持，不读取文件、不执行。',
-    check(response) { assert.match(response, /未接入|未安装|缺少|尚未.*检测|没有.*检测/) },
+    name: 'create-line-detections', expected: ['underwater-line-spectrum-detection'],
+    prompt: '我有一份完整的波束时域交接包，要执行 CA/OS-CFAR 线谱检测并生成候选、门限和逐帧 ledger，不做效果评价或跨窗跟踪。请判断并加载适用的现有 Skill，然后只说明选择结果，不读取文件、不执行。',
   },
   {
     name: 'term-explanation-needs-no-skill', expected: [],

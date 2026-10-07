@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:underwater-line-spectrum:contracts:0.1.0:AssociationRecord",
+  "title": "AssociationRecord contract 0.1.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "record_type": {
+      "const": "AssociationRecord"
+    },
+    "document_status": {
+      "enum": [
+        "draft",
+        "specified"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "unresolved_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/issue"
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "record_type",
+    "document_status",
+    "payload",
+    "unresolved_items"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "issue": {
+      "$ref": "urn:underwater-line-spectrum:contracts:0.1.0#/$defs/issue"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "document_status": {
+            "const": "draft"
+          }
+        },
+        "required": [
+          "document_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "urn:underwater-line-spectrum:contracts:0.1.0#/$defs/draft_AssociationRecord"
+          },
+          "unresolved_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/issue"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "payload",
+          "unresolved_items"
+        ]
+      },
+      "else": {
+        "properties": {
+          "payload": {
+            "$ref": "urn:underwater-line-spectrum:contracts:0.1.0#/$defs/AssociationRecord"
+          },
+          "unresolved_items": {
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "payload",
+          "unresolved_items"
+        ]
+      }
+    }
+  ]
+}

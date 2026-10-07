@@ -166,11 +166,12 @@ curl http://127.0.0.1:3089/api/health
 | `underwater-data-inspection` | 原始波形、阵元文件 | 接入、结构识别、完整性、通道质量、PSD 与时频分析 |
 | `underwater-beamforming` | 阵元时域数据及阵列事实 | CBF/MVDR 形成、扫描与波束产物生成 |
 | `underwater-beamforming-evaluation` | 已保存的波束结果 | 空间谱、DOA、BTR、输出质量和算法对比评价 |
+| `underwater-line-spectrum-detection` | 完整波束或旁路时域交接 | CA/OS-CFAR 检测、门限、线谱候选与逐帧覆盖账本 |
 | `underwater-line-spectrum-evaluation` | 完整检测结果包 | 候选统计、真值匹配和检测指标评价 |
 | `underwater-line-spectrum-tracking` | 完整检测交接包 | 把逐窗线谱候选关联为轨迹 |
 | `underwater-line-spectrum-tracking-evaluation` | 完整轨迹结果包 | 连续性、碎片、短轨和误差评价 |
 
-当前仓库还没有 `underwater-line-spectrum-detection` 的可执行 Skill，因此不会用评价 Skill 冒充检测器。现有波束结果和合规的历史检测结果仍可分别评价。
+Harness 按输入契约和动作区分检测、评价与跟踪：检测从合规时域交接生成候选，评价只读取已有检测结果，跟踪只关联完整逐窗候选。单独的 PSD 或图片可以用于定性观察，不能伪装成可执行检测输入。
 
 ### 增加 Skill
 

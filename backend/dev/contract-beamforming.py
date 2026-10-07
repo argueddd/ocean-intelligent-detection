@@ -193,7 +193,7 @@ class BeamformingIntegrationContracts(unittest.TestCase):
         for artifact in result["artifacts"]:
             self.assertEqual(runner.file_digest(destination/artifact["path"]), artifact["sha256"])
         self.assertEqual(runner.file_digest(source), source_sha)
-        self.assertEqual(result["handoff_status"], "blocked", "no line-spectrum receiver is installed or invoked")
+        self.assertEqual(result["handoff_status"], "blocked", "beamforming execution does not invoke detection automatically")
 
     def test_missing_sample_rate_blocks_export_without_reading_or_computing(self):
         _, _, _, report, request = self.upstream(rate=False)

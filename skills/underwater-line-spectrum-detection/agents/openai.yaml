@@ -1,0 +1,4 @@
+interface:
+  display_name: "水声线谱检测"
+  short_description: "从波束或旁路时域生成可追溯的线谱候选、门限与逐帧账本"
+  default_prompt: "使用 $underwater-line-spectrum-detection 根据输入数据与任务目标选择检测参数，执行线谱候选检测并保留门限、覆盖账本和参数依据。"

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "receipt_version": {
+      "const": "0.1.0"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "evidence_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "user_statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recorded_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authority": {
+      "const": "recorded_user_statement_not_authenticated"
+    },
+    "scope": {
+      "const": "preflight_plan_only_not_execution"
+    },
+    "can_execute": {
+      "const": false
+    }
+  },
+  "required": [
+    "receipt_version",
+    "request_id",
+    "plan_sha256",
+    "evidence_sha256",
+    "user_statement",
+    "user_reference",
+    "recorded_at",
+    "authority",
+    "scope",
+    "can_execute"
+  ],
+  "additionalProperties": false
+}

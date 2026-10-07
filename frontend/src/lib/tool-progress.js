@@ -119,6 +119,32 @@ function beamformingAction(command, workdir) {
   return null;
 }
 
+function lineSpectrumDetectionAction(command, workdir) {
+  for (const { script, args } of skillScriptInvocations(command, workdir, "underwater-line-spectrum-detection")) {
+    if (args.some(value => ["-h", "--help"].includes(value))) continue;
+    if (script === "input_adapter.py") {
+      if (args[0] === "adapt") return { title: "核对并接收波束时域与来源信息" };
+      if (args[0] === "check") return { title: "复核线谱检测输入与上游交接" };
+    }
+    if (script === "validate_contract.py") return { title: "检查线谱检测请求与结果契约" };
+    if (script === "detection_runtime.py") {
+      if (args[0] === "review") return { title: "核对检测输入、搜索范围与门限参数" };
+      if (args[0] === "confirm") return { title: "记录本次线谱检测执行范围" };
+      if (args[0] === "run") return { title: "计算线谱候选、门限与逐帧账本" };
+    }
+    if (script === "cfar_calibration.py") {
+      if (args[0] === "review") return { title: "核对 CFAR 门限标定数据与统计条件" };
+      if (args[0] === "confirm") return { title: "记录本次 CFAR 门限标定范围" };
+      if (args[0] === "run") return { title: "标定并验证 CFAR 检测门限" };
+    }
+    if (script === "tracking_handoff.py") {
+      if (args[0] === "build") return { title: "整理线谱候选与逐帧账本交接" };
+      if (args[0] === "check") return { title: "复核线谱跟踪输入交接" };
+    }
+  }
+  return null;
+}
+
 function lineSpectrumEvaluationAction(command, workdir) {
   for (const { script, args } of skillScriptInvocations(command, workdir, "underwater-line-spectrum-evaluation")) {
     if (args.some(value => ["-h", "--help"].includes(value))) continue;
@@ -193,6 +219,8 @@ function shellAction(command, workdir) {
   if (beamforming) return beamforming;
   const beamEvaluation = beamformingEvaluationAction(command, workdir);
   if (beamEvaluation) return beamEvaluation;
+  const detection = lineSpectrumDetectionAction(command, workdir);
+  if (detection) return detection;
   const tracking = lineSpectrumTrackingAction(command, workdir);
   if (tracking) return tracking;
   const trackingEvaluation = lineSpectrumTrackingEvaluationAction(command, workdir);
@@ -228,7 +256,7 @@ function inferredAction(name, args) {
   if (name === "edit") return { title: "更新文件中的指定内容" };
   if (name === "skill") {
     const skillName = args.name || args.skill_name || "";
-    return { title: skillName === "underwater-data-inspection" ? "加载数据体检与分析方法" : skillName === "underwater-beamforming-evaluation" ? "加载波束结果评价与证据分析方法" : skillName === "underwater-beamforming" ? "加载波束形成与参数确认方法" : skillName === "underwater-line-spectrum-tracking-evaluation" ? "加载线谱轨迹评价与证据分析方法" : skillName === "underwater-line-spectrum-tracking" ? "加载线谱候选轨迹关联方法" : skillName === "underwater-line-spectrum-evaluation" ? "加载线谱结果评价与证据检查方法" : "加载任务所需的处理方法" };
+    return { title: skillName === "underwater-data-inspection" ? "加载数据体检与分析方法" : skillName === "underwater-beamforming-evaluation" ? "加载波束结果评价与证据分析方法" : skillName === "underwater-beamforming" ? "加载波束形成与参数确认方法" : skillName === "underwater-line-spectrum-detection" ? "加载线谱候选检测与门限方法" : skillName === "underwater-line-spectrum-tracking-evaluation" ? "加载线谱轨迹评价与证据分析方法" : skillName === "underwater-line-spectrum-tracking" ? "加载线谱候选轨迹关联方法" : skillName === "underwater-line-spectrum-evaluation" ? "加载线谱结果评价与证据检查方法" : "加载任务所需的处理方法" };
   }
   if (name === "glob") return { title: "查找任务需要的文件", groupKey: "locate", groupTitle: "定位任务需要的文件" };
   if (name === "fs") return { title: "处理本次文件操作请求" };

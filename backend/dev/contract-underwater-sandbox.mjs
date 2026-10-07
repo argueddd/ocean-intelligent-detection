@@ -13,7 +13,7 @@ import { workspaceRoot, pythonEnvironment } from '../harness/runtime.mjs'
 
 const quote = value => "'" + String(value).replaceAll("'", "'\\''") + "'"
 const skip = process.platform !== 'darwin' ? '真实 Seatbelt 集成测试需要 macOS。' : false
-test('正式水声 Skill 的行为测试使用真实 SDK sandbox 和项目 Python', { skip, timeout: 180000 }, async t => {
+test('正式水声 Skill 的行为测试使用真实 SDK sandbox 和项目 Python', { skip, timeout: 300000 }, async t => {
   const dir = fs.mkdtempSync(path.join(workspaceRoot, '.run', 'underwater-sandbox-'))
   const { python, env } = pythonEnvironment(workspaceRoot, { PATH: process.env.PATH, TMPDIR: dir })
   const ctx = new Context()
@@ -31,6 +31,7 @@ test('正式水声 Skill 的行为测试使用真实 SDK sandbox 和项目 Pytho
     ['beamforming-handoff-tests', `${quote(python)} -B -W error::RuntimeWarning ${quote(path.join(workspaceRoot, 'backend/dev/contract-beamforming.py'))} -v`],
     ['beamforming-evaluation-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-beamforming-evaluation/tests'))} -v`],
     ['beamforming-evaluation-integration-tests', `${quote(python)} -B -W error::RuntimeWarning ${quote(path.join(workspaceRoot, 'backend/dev/contract-beamforming-evaluation.py'))} -v`],
+    ['line-spectrum-detection-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-line-spectrum-detection/tests'))} -v`],
     ['line-spectrum-evaluation-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-line-spectrum-evaluation/tests'))} -v`],
     ['line-spectrum-integration-tests', `${quote(python)} -B -W error::RuntimeWarning ${quote(path.join(workspaceRoot, 'backend/dev/contract-line-spectrum.py'))} -v`],
     ['line-spectrum-tracking-tests', `${quote(python)} -B -W error::RuntimeWarning -m unittest discover -s ${quote(path.join(workspaceRoot, 'skills/underwater-line-spectrum-tracking/tests'))} -v`],
@@ -49,11 +50,7 @@ test('正式水声 Skill 的行为测试使用真实 SDK sandbox 和项目 Pytho
       const count = /Ran (\d+) tests?/.exec(result.stderr.text)
       assert.ok(count, '没有真实 unittest 运行统计')
       const skippedCount = Number(/OK \(skipped=(\d+)\)/.exec(result.stderr.text)?.[1] || 0)
-      if (skippedCount) {
-        assert.equal(name, 'beamforming-provided-tests', '本项目集成用例不得跳过')
-        assert.equal(skippedCount, 1)
-        assert.match(result.stderr.text, /v0\.4\.3 integration suite requires sibling inspection and handoff skills/)
-      }
+      assert.equal(skippedCount, 0, `${name} 不得跳过集成用例`)
       summary.suites.push({ name, passed: true, testCount: Number(count[1]), skippedCount,
         passedCount: Number(count[1]) - skippedCount, enforcement: result.sandbox.enforcement })
       fs.writeFileSync(path.join(dir, 'summary.json'), JSON.stringify(summary, null, 2) + '\n')

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "evidence_version": {
+      "const": "0.1.0"
+    },
+    "actor": {
+      "const": "user"
+    },
+    "decision": {
+      "const": "confirm_reviewed_plan"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reference": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "evidence_version",
+    "actor",
+    "decision",
+    "request_id",
+    "plan_sha256",
+    "statement",
+    "reference"
+  ],
+  "additionalProperties": false
+}

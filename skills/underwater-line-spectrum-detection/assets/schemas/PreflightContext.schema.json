@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "context_version": {
+      "const": "0.1.0"
+    },
+    "document_status": {
+      "enum": [
+        "draft",
+        "specified"
+      ]
+    },
+    "inputs": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))(?![A-Za-z]:).+$"
+          },
+          "uniqueItems": true
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "descriptors": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))(?![A-Za-z]:).+$"
+          },
+          "uniqueItems": true
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_files": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))(?![A-Za-z]:).+$"
+              }
+            },
+            "required": [
+              "sha256",
+              "path"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "max_source_bytes": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "handoff_validation": {
+      "description": "Optional explicit opt-in to whole-packet receiver validation. Limits are per packet, additional to max_source_bytes; no numerical detection.",
+      "type": "object",
+      "properties": {
+        "max_package_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_block_samples": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "max_package_bytes",
+        "max_block_samples"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "context_version",
+    "document_status",
+    "inputs",
+    "descriptors",
+    "source_files",
+    "max_source_bytes"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "document_status": {
+            "const": "specified"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "inputs": {
+            "type": "array"
+          },
+          "descriptors": {
+            "type": "array"
+          },
+          "source_files": {
+            "type": "array"
+          },
+          "max_source_bytes": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ]
+}

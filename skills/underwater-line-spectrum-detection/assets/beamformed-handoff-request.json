@@ -1,0 +1,18 @@
+{
+  "handoff_version": "0.1",
+  "source_result": {
+    "path": null,
+    "sha256": null
+  },
+  "selection": null,
+  "sample_policy": "preserve_full_output_and_mask",
+  "units_policy": "preserve_no_scaling",
+  "limitations_acknowledgement": null,
+  "output": {
+    "directory": null,
+    "block_samples": null,
+    "max_working_bytes": null,
+    "max_artifact_bytes": null
+  },
+  "approval": null
+}

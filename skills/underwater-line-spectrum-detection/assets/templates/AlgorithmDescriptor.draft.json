@@ -1,0 +1,29 @@
+{
+  "schema_version": "0.1.0",
+  "record_type": "AlgorithmDescriptor",
+  "document_status": "draft",
+  "payload": {
+    "detector_id": null,
+    "detector_version": null,
+    "implementation_identity": null,
+    "input_requirements": null,
+    "capabilities": null,
+    "parameter_definitions": null,
+    "processing_definition": null,
+    "result_definition": null,
+    "product_definitions": null,
+    "resource_model": null,
+    "limitations": null,
+    "validation_evidence": null
+  },
+  "unresolved_items": [
+    {
+      "field": "/payload",
+      "reason": "尚未填写并核对本对象所需信息。",
+      "affected_actions": [
+        "字段定稿；不是执行许可"
+      ],
+      "question": "请按接口规范逐项填写可靠信息，将不能确定的字段、影响和所需决定分别列出。"
+    }
+  ]
+}

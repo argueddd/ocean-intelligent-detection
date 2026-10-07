@@ -1,0 +1,25 @@
+{
+  "schema_version": "0.1.0",
+  "record_type": "AssociationRecord",
+  "document_status": "draft",
+  "payload": {
+    "record_id": null,
+    "entities": null,
+    "relations": null,
+    "scope_mapping": null,
+    "evidence_refs": null,
+    "persistence": null,
+    "comparisons": null,
+    "followups": null
+  },
+  "unresolved_items": [
+    {
+      "field": "/payload",
+      "reason": "尚未填写并核对本对象所需信息。",
+      "affected_actions": [
+        "字段定稿；不是执行许可"
+      ],
+      "question": "请按接口规范逐项填写可靠信息，将不能确定的字段、影响和所需决定分别列出。"
+    }
+  ]
+}

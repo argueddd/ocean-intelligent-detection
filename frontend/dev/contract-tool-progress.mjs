@@ -11,6 +11,7 @@ const tool = (name, args, status = "done", id = "t1") => ({ role: "tool", kind: 
 const inspect = ".venv/bin/python skills/underwater-data-inspection/scripts/inspect_data.py";
 const beamform = ".venv/bin/python skills/underwater-beamforming/scripts";
 const beamEvaluate = ".venv/bin/python skills/underwater-beamforming-evaluation/scripts";
+const detect = ".venv/bin/python skills/underwater-line-spectrum-detection/scripts";
 const evaluate = ".venv/bin/python skills/underwater-line-spectrum-evaluation/scripts";
 const track = ".venv/bin/python skills/underwater-line-spectrum-tracking/scripts";
 const trackEvaluate = ".venv/bin/python skills/underwater-line-spectrum-tracking-evaluation/scripts";
@@ -93,6 +94,28 @@ check("generic execute.py and beamforming names in text never acquire an algorit
   // A blocked gate is not the inspection CLI's partial-analysis success.
   assert.equal(toolResultState(tool("bash", { command: `${beamform}/execute.py check execution.json` }), "out\n[exit code: 2]"), "error");
 });
+check("line-spectrum detection shows input, review, execution and handoff as separate steps", () => {
+  for (const [command, title] of [
+    [`${detect}/input_adapter.py adapt --handoff handoff.json`, "核对并接收波束时域与来源信息"],
+    [`${detect}/input_adapter.py check signal-input.json --handoff handoff.json`, "复核线谱检测输入与上游交接"],
+    [`${detect}/validate_contract.py request request.json`, "检查线谱检测请求与结果契约"],
+    [`${detect}/detection_runtime.py review request.json context.json --source-root inputs`, "核对检测输入、搜索范围与门限参数"],
+    [`${detect}/detection_runtime.py confirm request.json context.json --source-root inputs`, "记录本次线谱检测执行范围"],
+    [`${detect}/detection_runtime.py run request.json context.json --source-root inputs`, "计算线谱候选、门限与逐帧账本"],
+    [`${detect}/cfar_calibration.py review calibration.json --source-root inputs`, "核对 CFAR 门限标定数据与统计条件"],
+    [`${detect}/cfar_calibration.py run calibration.json --source-root inputs`, "标定并验证 CFAR 检测门限"],
+    [`${detect}/tracking_handoff.py build result --manifest-sha256 abc --max-read-bytes 100 --output handoff.json`, "整理线谱候选与逐帧账本交接"],
+  ]) assert.equal(toolProgress(tool("bash", { command, description: "Run detection" })).title, title);
+  assert.equal(toolProgress(tool("skill", { name: "underwater-line-spectrum-detection" })).title, "加载线谱候选检测与门限方法");
+});
+check("line-spectrum detection names outside the exact Skill path stay generic", () => {
+  for (const command of [
+    "python detection_runtime.py run request.json context.json",
+    "python other-skill/scripts/detection_runtime.py review request.json context.json",
+    "cat skills/underwater-line-spectrum-detection/scripts/detection_runtime.py",
+    `echo '${detect}/detection_runtime.py run request.json context.json'`,
+  ]) assert.doesNotMatch(toolProgress(tool("bash", { command })).title, /线谱候选、门限|检测输入、搜索范围/);
+});
 check("beamforming evaluation separates request checks, evidence preflight and metric execution", () => {
   for (const [command, title] of [
     [`${beamEvaluate}/validate_contract.py request.json --expect EvaluationRequest`, "检查波束评价请求与字段约束"],
@@ -155,7 +178,7 @@ check("line-spectrum evaluation descriptions remain primary and loading does not
   assert.equal(progress.source, "description");
   for (const args of [{ name: "underwater-line-spectrum-evaluation" }, { skill_name: "underwater-line-spectrum-evaluation" }])
     assert.equal(toolProgress(tool("skill", args)).title, "加载线谱结果评价与证据检查方法");
-  assert.equal(toolProgress(tool("skill", { name: "underwater-line-spectrum-detection" })).title, "加载任务所需的处理方法");
+  assert.equal(toolProgress(tool("skill", { name: "underwater-line-spectrum-detection" })).title, "加载线谱候选检测与门限方法");
 });
 check("evaluation invocation resolves quoted paths and workdirs without confusing CLI flags", () => {
   for (const args of [
