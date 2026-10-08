@@ -52,6 +52,15 @@ if (missing.length) {
   console.error(`❌ backend/.env 仍需填写: ${missing.join(', ')}`)
   process.exit(1)
 }
+const searchProvider = String(process.env.WEB_SEARCH_PROVIDER || 'aliyun').trim().toLowerCase()
+if (!['aliyun', 'deepseek'].includes(searchProvider)) {
+  console.error('❌ WEB_SEARCH_PROVIDER 只能填写 aliyun 或 deepseek')
+  process.exit(1)
+}
+if (searchProvider === 'deepseek' && invalid('DEEPSEEK_API_KEY')) {
+  console.error('❌ 使用 DeepSeek 联网搜索时必须填写 DEEPSEEK_API_KEY')
+  process.exit(1)
+}
 NODE
   then
     exit 1
@@ -108,7 +117,7 @@ wait_ready "$WEB_NAME" "$WEB_URL" "$(cat "$RUN_DIR/$WEB_NAME.pid" 2>/dev/null)" 
 if [ "$MODE" = --harness ] && [ "$ok" -eq 0 ]; then
   for url in "$API_URL" "$WEB_URL/api/health"; do
     if ! curl -fsS -m 5 "$url" | "$NODE_BIN" -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>{try{process.exit(JSON.parse(s).profile===process.argv[1]?0:1)}catch{process.exit(1)}})' "$EXPECTED_PROFILE"; then
-      echo "❌ $url 没有连接到 $EXPECTED_PROFILE；请检查占用端口的服务。"; ok=1
+      echo "❌ $url 没有连接到 ${EXPECTED_PROFILE}；请检查占用端口的服务。"; ok=1
     fi
   done
 fi

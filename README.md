@@ -59,6 +59,25 @@ LLM_API_KEY=你的文本模型密钥
 LLM_MODEL=qwen3.8-flash
 ```
 
+联网搜索也使用阿里云百炼，默认复用上述模型地址和密钥：
+
+```dotenv
+WEB_SEARCH_PROVIDER=aliyun
+WEB_SEARCH_MODEL=qwen3.8-flash
+WEB_SEARCH_MAX_TOKENS=2048
+```
+
+如需切换到 DeepSeek 官方联网搜索，则配置：
+
+```dotenv
+WEB_SEARCH_PROVIDER=deepseek
+DEEPSEEK_API_KEY=你的DeepSeek官方API密钥
+DEEPSEEK_SEARCH_BASE_URL=https://api.deepseek.com/anthropic/v1
+```
+
+两套配置可以同时保留，`WEB_SEARCH_PROVIDER` 决定当前使用哪一套。阿里云搜索模型应支持
+Responses API 的 `web_search` 工具。
+
 如需在对话框中粘贴或上传图片，再填写：
 
 ```dotenv
@@ -141,6 +160,11 @@ curl http://127.0.0.1:3089/api/health
 | `LLM_API_KEY` | 是 | 文本模型密钥 |
 | `LLM_MODEL` | 是 | 主模型名称 |
 | `LLM_THINKING` | 否 | 是否开启服务端长思考，默认 `false` |
+| `WEB_SEARCH_PROVIDER` | 否 | 联网搜索提供器：`aliyun` 或 `deepseek`，默认 `aliyun` |
+| `WEB_SEARCH_MODEL` | 否 | 阿里云百炼联网搜索模型，默认复用 `LLM_MODEL` |
+| `WEB_SEARCH_MAX_TOKENS` | 否 | 联网搜索辅助回答的最大输出长度，默认 `2048` |
+| `DEEPSEEK_API_KEY` | 使用 DeepSeek 搜索时必需 | DeepSeek 官方 API 密钥 |
+| `DEEPSEEK_SEARCH_BASE_URL` | 否 | DeepSeek 官方搜索接口，已有默认值 |
 | `VLM_BASE_URL` | 图片任务必需 | 视觉模型接口 |
 | `VLM_API_KEY` | 图片任务必需 | 视觉模型密钥 |
 | `VLM_MODEL` | 图片任务必需 | 视觉模型名称 |

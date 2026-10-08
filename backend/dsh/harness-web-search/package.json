@@ -1,0 +1,14 @@
+{
+  "name": "ocean-harness-web-search",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aliyun Bailian Responses API web-search provider for the ocean Harness.",
+  "type": "module",
+  "main": "lib/index.js",
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  }
+}

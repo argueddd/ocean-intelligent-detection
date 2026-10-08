@@ -13,6 +13,7 @@ const suites = [
   ['dev/contract-image-input.mjs', []],
   ['dev/contract-harness.mjs', []],
   ['dev/contract-model-options.mjs', []],
+  ['dev/contract-aliyun-web-search.mjs', []],
   ['dev/contract-skills.mjs', []],
   ['dev/contract-harness-skill-router.mjs', []],
   ['dev/contract-execution.mjs', []],

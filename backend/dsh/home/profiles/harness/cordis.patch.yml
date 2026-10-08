@@ -175,6 +175,18 @@
     model: !!js process.env.VLM_MODEL || 'qwen3.8-omni-flash'
     maxImageBytes: !!js Number(process.env.VLM_MAX_IMAGE_BYTES) || 5242880
 
+- id: web
+  config:
+    searchProvider: !!js String(process.env.WEB_SEARCH_PROVIDER || 'aliyun').toLowerCase() === 'deepseek' ? 'deepseek-official' : 'aliyun-bailian'
+    fetchProvider: http
+
+- id: ocean-harness-web-search
+  config:
+    apiKeyEnv: LLM_API_KEY
+    baseURL: !!js process.env.LLM_BASE_URL
+    model: !!js process.env.WEB_SEARCH_MODEL || process.env.LLM_MODEL || 'qwen3.8-flash'
+    maxTokens: !!js Number(process.env.WEB_SEARCH_MAX_TOKENS) || 2048
+
 - id: ocean-harness-control
   disabled: !!js Boolean(process.env.HARNESS_CONTROL_TOKEN) === false
 
